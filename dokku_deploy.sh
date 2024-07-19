@@ -276,7 +276,6 @@ function deploy_app {
 dokku_app_deploy(){
 
   add_ssh_key
-  cleanup_docker
   check_app_exists
   deploy_app
   cleanup_docker
