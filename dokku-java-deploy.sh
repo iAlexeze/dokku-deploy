@@ -956,6 +956,7 @@ dokku_app_deploy(){
 
   add_ssh_key
   check_app_exists
+  echo "We are coming"
   deploy_app
 
 }
