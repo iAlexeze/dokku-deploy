@@ -932,24 +932,24 @@ function deploy_app {
     mvn clean package || error_exit "Failed to build $APPLICATION_NAME code using maven"
 
     # Build Docker image
-    docker build -t "$IMAGE_NAME" . || error_exit "Failed to build $APPLICATION_NAME image"
+    # docker build -t "$IMAGE_NAME" . || error_exit "Failed to build $APPLICATION_NAME image"
 
-    # Deploy using the latest image
-    dokku git:from-image "$APPLICATION_NAME" "$IMAGE_NAME" || error_exit "Failed to deploy $APPLICATION_NAME"
+    # # Deploy using the latest image
+    # dokku git:from-image "$APPLICATION_NAME" "$IMAGE_NAME" || error_exit "Failed to deploy $APPLICATION_NAME"
 
-    # Show report for the app
-    dokku ps:report "$APPLICATION_NAME" || error_exit "Failed to show app report"
+    # # Show report for the app
+    # dokku ps:report "$APPLICATION_NAME" || error_exit "Failed to show app report"
 
-    # Check if app is running
-    if ! docker ps --filter "name=$APPLICATION_NAME" --format "{{.Names}}" | grep -q "$APPLICATION_NAME"; then
-        error_exit "App is not running"
-    else
-        echo "App $APPLICATION_NAME" is running
-        docker ps --filter "name=$APPLICATION_NAME"
-    fi
+    # # Check if app is running
+    # if ! docker ps --filter "name=$APPLICATION_NAME" --format "{{.Names}}" | grep -q "$APPLICATION_NAME"; then
+    #     error_exit "App is not running"
+    # else
+    #     echo "App $APPLICATION_NAME" is running
+    #     docker ps --filter "name=$APPLICATION_NAME"
+    # fi
 
-    # Deployment status
-    echo -e "\n---------------------------------------\n$APPLICATION_NAME Deployment is Successful\n---------------------------------------"
+    # # Deployment status
+    # echo -e "\n---------------------------------------\n$APPLICATION_NAME Deployment is Successful\n---------------------------------------"
 }
 
 dokku_app_deploy(){
