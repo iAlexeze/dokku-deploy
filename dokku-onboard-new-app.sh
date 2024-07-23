@@ -206,6 +206,10 @@ PROGNAME=$(basename "$0")
 # Custom error handling function
 function error_exit {
     echo -e "${PROGNAME}: ${1:-"Unknown Error"}" 1>&2
+    info "INFO: Cleaning up due to failure..."
+    dokku apps:destroy ${APPLICATION_NAME} --force
+    rm -rf ${PROJ_DIR}
+    info "Done"
     exit 1
 }
 
@@ -277,6 +281,11 @@ function create_app {
     info "Adding Domain Name to ${APPLICATION_NAME}..."
     dokku domains:add ${APPLICATION_NAME} ${APP_URL} || error_exit "Failed to add App URL to ${APPLICATION_NAME}"
     success "${APP_URL} added to ${APPLICATION_NAME} successfully"
+
+    # Remove default URL from the application
+    info "Removing Default Domain Name from ${APPLICATION_NAME}..."
+    dokku domains:remove ${APPLICATION_NAME} ${APPLICATION_NAME}.* || error_exit "Failed to remove default App URL from ${APPLICATION_NAME}"
+    success "Default Domains removed successfully"
 
     # Setup Application Repository Remotely
     cd ${DEPLOYMENT_DIR} || error_exit "Failed to change directory to ${DEPLOYMENT_DIR}"
