@@ -192,11 +192,13 @@ enable_debug
 SSH_DIR='/home/dokku/.ssh'
 DEPLOYMENT_DIR='/home/dokku/.deployments'
 DATE=$(date +%Y.%m.%d-%H:%M)
-IMAGE_NAME="$APPLICATION_NAME-v1.$DATE"
+IMAGE_NAME="${APPLICATION_NAME}-v1.${DATE}"
+CERT_TAR="/home/dokku/.ssl/ssl-eclathealthcare_com/cert-key.tar"
 
 # Internal Variables
 SSH_ACCESS_KEY="${SSH_DIR}/${BITBUCKET_CLONE_KEY_NAME}"
 PROJ_DIR="${DEPLOYMENT_DIR}/${PROJECT_DIRECTORY_NAME}"
+APP_URL="${SUBDOMAIN}.eclathealthcare.com"
 
 # Set Program Name
 PROGNAME=$(basename "$0")
@@ -216,7 +218,7 @@ function add_ssh_key {
         echo "ssh-agent is already running."
     fi
 
-    ssh-add "$SSH_ACCESS_KEY" > /dev/null 2>&1 || error_exit "Failed to add SSH key.  \nEnter a BITBUCKET_CLONE_KEY_NAME already added to your bitbucket profile and also located at ~/.ssh in the server"
+    ssh-add "${SSH_ACCESS_KEY}" > /dev/null 2>&1 || error_exit "Failed to add SSH key.  \nEnter a BITBUCKET_CLONE_KEY_NAME already added to your bitbucket profile and also located at ~/.ssh in the server"
 }
 
 # Function to clean up unused images and resources
@@ -225,53 +227,71 @@ function cleanup_docker {
     docker system prune -af > /dev/null 2>&1 &
 
     local prune_pid=$!
-    while kill -0 $prune_pid 2>/dev/null; do
+    while kill -0 ${prune_pid} 2>/dev/null; do
         echo -n "."
         sleep 1
     done
     echo -e "\nDone!"
 }
 
-# Function to check if the app exists
-function check_app_exists() {
-    if ! dokku apps:list | awk '{print $1}' | awk -v app="$APPLICATION_NAME" '$0 == app' >/dev/null; then
-        error_exit "$APPLICATION_NAME NOT FOUND"
-    else
-        echo -e "--------------------------\nApplication - [$APPLICATION_NAME] already exists.\nProceeding to build...\n--------------------------"
-    fi
-}
-
 # Function to deploy the app
 function deploy_app {
     # Change to project directory
-    cd "$PROJ_DIR" || error_exit "Failed to change directory to $PROJ_DIR"
+    cd "${PROJ_DIR}" || error_exit "Failed to change directory to ${PROJ_DIR}"
 
     # Pull latest changes
-    git pull origin $BRANCH || error_exit "Failed to pull latest changes"
+    git pull origin ${BRANCH} || error_exit "Failed to pull latest changes"
 
     # Switch to the deployment branch
-    git switch $BRANCH || error_exit "Failed to switch to deployment branch"
+    git switch ${BRANCH} || error_exit "Failed to switch to deployment branch"
 
     # Build Docker image
-    docker build -t "$IMAGE_NAME" . || error_exit "Failed to build $APPLICATION_NAME image"
+    docker build -t "${IMAGE_NAME}" . || error_exit "Failed to build ${APPLICATION_NAME} image"
 
     # Deploy using the latest image
-    dokku git:from-image "$APPLICATION_NAME" "$IMAGE_NAME" || error_exit "Failed to deploy $APPLICATION_NAME"
+    dokku git:from-image "${APPLICATION_NAME}" "${IMAGE_NAME}" || error_exit "Failed to deploy ${APPLICATION_NAME}"
 
     # Show report for the app
-    dokku ps:report "$APPLICATION_NAME" || error_exit "Failed to show app report"
+    dokku ps:report "${APPLICATION_NAME}" || error_exit "Failed to show app report"
 
     # Check if app is running
-    if ! docker ps --filter "name=$APPLICATION_NAME" --format "{{.Names}}" | grep -q "$APPLICATION_NAME"; then
+    if ! docker ps --filter "name=${APPLICATION_NAME}" --format "{{.Names}}" | grep -q "${APPLICATION_NAME}"; then
         error_exit "App is not running"
     else
-        echo "App $APPLICATION_NAME" is running
-        docker ps --filter "name=$APPLICATION_NAME"
+        echo "App ${APPLICATION_NAME}" is running
+        docker ps --filter "name=${APPLICATION_NAME}"
     fi
 
     # Deployment status
-    echo -e "\n---------------------------------------\n$APPLICATION_NAME Deployment is Successful\n---------------------------------------"
+    echo -e "\n---------------------------------------\n${APPLICATION_NAME} Deployment is Successful\n---------------------------------------"
 }
+
+function create_app {
+    info "INFO: Creating app - ${APPLICATION_NAME}..."
+
+    # Create Application
+    dokku apps:create ${APPLICATION_NAME} || error_exit "Failed to create app - ${APPLICATION_NAME}"
+
+    # Add domain name to the 
+    dokku domains:add ${APPLICATION_NAME} ${APP_URL} || error_exit "Failed to add App URL to ${APPLICATION_NAME}"
+
+    # Setup Application Repository Remotely
+    cd ${DEPLOYMENT_DIR} || error_exit "Failed to change directory to ${DEPLOYMENT_DIR}"
+    git clone -b ${BRANCH} git@bitbucket.org:interswitch/${PROJECT_DIRECTORY_NAME} || error_exit "Failed to clone ${PROJECT_DIRECTORY_NAME} Repository"
+
+    # Deploy the Application
+    deploy_app
+
+    # Add Certificate to the app_url
+    dokku certs:add ${APPLICATION_NAME} < ${CERT_TAR} || error_exit "Failed to add App Certificate to ${APPLICATION_NAME}"
+
+
+    if [[ ! ${APP_PORT} = "80" ]]; then
+        dokku ports:add ${APPLICATION_NAME} http:80:${APP_PORT} || error_exit "Failed to add Port 80 to ${APPLICATION_NAME}"
+        dokku ports:add ${APPLICATION_NAME} http:443:${APP_PORT} || error_exit "Failed to add Port 443 to ${APPLICATION_NAME}"    
+    fi
+}
+
 
 dokku_app_deploy(){
 
@@ -282,6 +302,16 @@ dokku_app_deploy(){
 
 }
 
+# Function to check if the app exists
+function check_app_exists() {
+    if ! dokku apps:list | awk '{print $1}' | awk -v app="${APPLICATION_NAME}" '$0 == app' >/dev/null; then
+        info "WARN: ${APPLICATION_NAME} NOT FOUND"
+        create_app
+    else
+        echo -e "--------------------------\nApplication - [${APPLICATION_NAME}] already exists.\nProceeding to build...\n--------------------------"
+    fi
+}
+
 run dokku_app_deploy
 
 if [[ "${status}" == "0" ]]; then
@@ -289,3 +319,4 @@ if [[ "${status}" == "0" ]]; then
 else
   fail "Error!"
 fi
+
