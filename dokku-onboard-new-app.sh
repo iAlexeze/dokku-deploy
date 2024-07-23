@@ -312,19 +312,27 @@ dokku_app_deploy(){
 #     fi
 # }
 
-function check_app_exists() {
-    echo "Checking if app ${APPLICATION_NAME} exists..."
+# function check_app_exists() {
+#     echo "Checking if app ${APPLICATION_NAME} exists..."
 
-    # List all apps
-    apps=$(dokku apps:list | awk '{print $1}')
-    echo "Existing apps: $apps"
+#     # List all apps
+#     apps=$(dokku apps:list | awk '{print $1}')
+#     echo "Existing apps: $apps"
 
-    # Check if the application name exists in the list
-    if echo "$apps" | awk -v app="${APPLICATION_NAME}" '$0 == app' >/dev/null; then
-        echo -e "--------------------------\nApplication - [${APPLICATION_NAME}] already exists.\nProceeding to build...\n--------------------------"
+#     # Check if the application name exists in the list
+#     if echo "$apps" | awk -v app="${APPLICATION_NAME}" '$0 == app' >/dev/null; then
+#         echo -e "--------------------------\nApplication - [${APPLICATION_NAME}] already exists.\nProceeding to build...\n--------------------------"
+#     else
+#         info "WARN: ${APPLICATION_NAME} NOT FOUND"
+#         create_app
+#     fi
+# }
+
+function check_app_exists {
+    if ! dokku apps:list | grep -iq "$APPLICATION_NAME"; then
+        error_exit "$APPLICATION_NAME NOT FOUND"
     else
-        info "WARN: ${APPLICATION_NAME} NOT FOUND"
-        create_app
+        echo -e "--------------------------\nApplication - [$APPLICATION_NAME] already exists.\nProceeding to build...\n--------------------------"
     fi
 }
 
