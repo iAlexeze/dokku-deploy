@@ -287,7 +287,7 @@ function create_app {
        git clone -b ${BRANCH} git@bitbucket.org:interswitch/${PROJECT_DIRECTORY_NAME} || error_exit "Failed to clone ${PROJECT_DIRECTORY_NAME} Repository"
        success "${PROJECT_DIRECTORY_NAME} cloned successfully"
     else
-       info "INFO: ${PROJECT_DIRECTORY_NAME} already on machine"
+       info "INFO: ${PROJECT_DIRECTORY_NAME} repository already on machine"
        info "INFO: Continue to deploy..."
     fi
 
