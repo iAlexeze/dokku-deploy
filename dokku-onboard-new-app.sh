@@ -292,14 +292,24 @@ function create_app {
     fi
 }
 
-function check_app_exists {
-    if ! dokku apps:list | grep -iq "$APPLICATION_NAME"; then
-        error_exit "$APPLICATION_NAME NOT FOUND"
+# function check_app_exists {
+#     if ! dokku apps:list | grep -iq "$APPLICATION_NAME"; then
+#         info "WARN: ${APPLICATION_NAME} NOT FOUND"
+#         create_app
+#     else
+#         echo -e "--------------------------\nApplication - [$APPLICATION_NAME] already exists.\nProceeding to build...\n--------------------------"
+#     fi
+# }
+
+# Function to check if the app exists
+function check_app_exists() {
+    if ! dokku apps:list | awk '{print $1}' | awk -v app="${APPLICATION_NAME}" '$0 == app' >/dev/null; then
+        info "WARN: ${APPLICATION_NAME} NOT FOUND"
+        create_app
     else
-        echo -e "--------------------------\nApplication - [$APPLICATION_NAME] already exists.\nProceeding to build...\n--------------------------"
+        echo -e "--------------------------\nApplication - [${APPLICATION_NAME}] already exists.\nProceeding to build...\n--------------------------"
     fi
 }
-
 
 dokku_app_deploy(){
 
@@ -309,16 +319,6 @@ dokku_app_deploy(){
   cleanup_docker
 
 }
-
-# Function to check if the app exists
-# function check_app_exists() {
-#     if ! dokku apps:list | awk '{print $1}' | awk -v app="${APPLICATION_NAME}" '$0 == app' >/dev/null; then
-#         info "WARN: ${APPLICATION_NAME} NOT FOUND"
-#         create_app
-#     else
-#         echo -e "--------------------------\nApplication - [${APPLICATION_NAME}] already exists.\nProceeding to build...\n--------------------------"
-#     fi
-# }
 
 # function check_app_exists() {
 #     echo "Checking if app ${APPLICATION_NAME} exists..."
