@@ -15,7 +15,7 @@
 #   MODE (default: "deploy")
 #   SSH_KEY (default: null)
 #   PORT (default: 22)
-#   
+#
 
 
 # Begin Standard 'imports'
@@ -171,7 +171,7 @@ check_for_newer_version() {
       warning "Starting check for the new version of the pipe..."
       wget_debug_level="--verbose"
     fi
-    pipe_latest_version=$(wget "${wget_debug_level}" -O - "${pipe_repository}"/raw/master/pipe.yml | awk -F ":" '/image/ {print $NF}')
+    pipe_latest_version=$(wget "${wget_debug_level}" -O - "${pipe_repository}"/raw/master/pipe.yml | awk -F ":" '/image/ {print $NF}')      
 
     if [[ "${pipe_current_version}" != "${pipe_latest_version}" ]]; then
       warning "New version available: ${pipe_name} ${pipe_current_version} to ${pipe_latest_version}"
@@ -272,7 +272,7 @@ function create_app {
     # Create Application
     dokku apps:create ${APPLICATION_NAME} || error_exit "Failed to create app - ${APPLICATION_NAME}"
 
-    # Add domain name to the 
+    # Add domain name to the
     dokku domains:add ${APPLICATION_NAME} ${APP_URL} || error_exit "Failed to add App URL to ${APPLICATION_NAME}"
 
     # Setup Application Repository Remotely
@@ -302,14 +302,24 @@ function create_app {
 # }
 
 # Function to check if the app exists
-function check_app_exists() {
-    if dokku apps:list | awk '{print $1}' | awk -v app="${APPLICATION_NAME}" '$0 == app' >/dev/null; then
+function check_app_exists {
+    if ! dokku apps:list | grep -iq "$APPLICATION_NAME"; then
         info "WARN: ${APPLICATION_NAME} NOT FOUND"
         create_app
     else
-        echo -e "--------------------------\nApplication - [${APPLICATION_NAME}] already exists.\nProceeding to build...\n--------------------------"
+        echo -e "--------------------------\nApplication - [$APPLICATION_NAME] already exists.\nProceeding to build...\n--------------------------"
     fi
 }
+
+# # Function to check if the app exists
+# function check_app_exists() {
+#     if dokku apps:list | awk '{print $1}' | awk -v app="${APPLICATION_NAME}" '$0 == app' >/dev/null; then
+#         info "WARN: ${APPLICATION_NAME} NOT FOUND"
+#         create_app
+#     else
+#         echo -e "--------------------------\nApplication - [${APPLICATION_NAME}] already exists.\nProceeding to build...\n--------------------------"
+#     fi
+# }
 
 dokku_app_deploy(){
 
@@ -319,22 +329,6 @@ dokku_app_deploy(){
   cleanup_docker
 
 }
-
-# function check_app_exists() {
-#     echo "Checking if app ${APPLICATION_NAME} exists..."
-
-#     # List all apps
-#     apps=$(dokku apps:list | awk '{print $1}')
-#     echo "Existing apps: $apps"
-
-#     # Check if the application name exists in the list
-#     if echo "$apps" | awk -v app="${APPLICATION_NAME}" '$0 == app' >/dev/null; then
-#         echo -e "--------------------------\nApplication - [${APPLICATION_NAME}] already exists.\nProceeding to build...\n--------------------------"
-#     else
-#         info "WARN: ${APPLICATION_NAME} NOT FOUND"
-#         create_app
-#     fi
-# }
 
 run dokku_app_deploy
 
