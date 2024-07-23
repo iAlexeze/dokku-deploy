@@ -277,7 +277,11 @@ function create_app {
 
     # Setup Application Repository Remotely
     cd ${DEPLOYMENT_DIR} || error_exit "Failed to change directory to ${DEPLOYMENT_DIR}"
-    git clone -b ${BRANCH} git@bitbucket.org:interswitch/${PROJECT_DIRECTORY_NAME} || error_exit "Failed to clone ${PROJECT_DIRECTORY_NAME} Repository"
+    
+    # Check whether Repo has been cloned before
+    if [[ ! -d ${APPLICATION_NAME} ]]; then
+        git clone -b ${BRANCH} git@bitbucket.org:interswitch/${PROJECT_DIRECTORY_NAME} || error_exit "Failed to clone ${PROJECT_DIRECTORY_NAME} Repository"
+    fi
 
     # Deploy the Application
     deploy_app
@@ -291,15 +295,6 @@ function create_app {
         dokku ports:add ${APPLICATION_NAME} http:443:${APP_PORT} || error_exit "Failed to add Port 443 to ${APPLICATION_NAME}"    
     fi
 }
-
-# function check_app_exists {
-#     if ! dokku apps:list | grep -iq "$APPLICATION_NAME"; then
-#         info "WARN: ${APPLICATION_NAME} NOT FOUND"
-#         create_app
-#     else
-#         echo -e "--------------------------\nApplication - [$APPLICATION_NAME] already exists.\nProceeding to build...\n--------------------------"
-#     fi
-# }
 
 # Function to check if the app exists
 function check_app_exists {
