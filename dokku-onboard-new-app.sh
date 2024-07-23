@@ -271,28 +271,40 @@ function create_app {
 
     # Create Application
     dokku apps:create ${APPLICATION_NAME} || error_exit "Failed to create app - ${APPLICATION_NAME}"
+    success "${APPLICATION_NAME} created"
 
-    # Add domain name to the
+    # Add domain name to the application
+    info "Adding Domain Name to ${APPLICATION_NAME}..."
     dokku domains:add ${APPLICATION_NAME} ${APP_URL} || error_exit "Failed to add App URL to ${APPLICATION_NAME}"
+    success "${APP_URL} added to ${APPLICATION_NAME} successfully"
 
     # Setup Application Repository Remotely
     cd ${DEPLOYMENT_DIR} || error_exit "Failed to change directory to ${DEPLOYMENT_DIR}"
     
-    # Check whether Repo has been cloned before
-    if [[ ! -d ${APPLICATION_NAME} ]]; then
-        git clone -b ${BRANCH} git@bitbucket.org:interswitch/${PROJECT_DIRECTORY_NAME} || error_exit "Failed to clone ${PROJECT_DIRECTORY_NAME} Repository"
+    # Check if either the project directory or application directory does not exist
+    if [[ ! -d ${PROJECT_DIRECTORY_NAME} ]] || [[ ! -d ${APPLICATION_NAME} ]]; then
+       echo "Directory ${PROJECT_DIRECTORY_NAME} or ${APPLICATION_NAME} does not exist. Cloning repository..."
+       git clone -b ${BRANCH} git@bitbucket.org:interswitch/${PROJECT_DIRECTORY_NAME} || error_exit "Failed to clone ${PROJECT_DIRECTORY_NAME} Repository"
+       success "${PROJECT_DIRECTORY_NAME} cloned successfully"
+    else
+       info "INFO: ${PROJECT_DIRECTORY_NAME} already on machine"
+       info "INFO: Continue to deploy..."
     fi
 
     # Deploy the Application
     deploy_app
 
     # Add Certificate to the app_url
+    info "INFO: Adding Certificate to ${SUBDOMAIN} ..."
     dokku certs:add ${APPLICATION_NAME} < ${CERT_TAR} || error_exit "Failed to add App Certificate to ${APPLICATION_NAME}"
+    success "Certificate added successfully"
 
-
+    # Check if port mapping is needed
     if [[ ! ${APP_PORT} = "80" ]]; then
+	info "INFO: Mapping ports appropriately"
         dokku ports:add ${APPLICATION_NAME} http:80:${APP_PORT} || error_exit "Failed to add Port 80 to ${APPLICATION_NAME}"
         dokku ports:add ${APPLICATION_NAME} http:443:${APP_PORT} || error_exit "Failed to add Port 443 to ${APPLICATION_NAME}"    
+	success "Ports mapped successfully"
     fi
 }
 
@@ -301,8 +313,10 @@ function check_app_exists {
     if ! dokku apps:list | grep -iq "$APPLICATION_NAME"; then
         info "WARN: ${APPLICATION_NAME} NOT FOUND"
         create_app
+	success "${APPLICATION_NAME} created successfully"
     else
         echo -e "--------------------------\nApplication - [$APPLICATION_NAME] already exists.\nProceeding to build...\n--------------------------"
+       
     fi
 }
 
