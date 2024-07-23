@@ -279,12 +279,12 @@ function create_app {
 
     # Add domain name to the application
     info "Adding Domain Name to ${APPLICATION_NAME}..."
-    dokku domains:add ${APPLICATION_NAME} ${APP_URL} || error_exit "Failed to add App URL to ${APPLICATION_NAME}"
+    dokku domains:set ${APPLICATION_NAME} ${APP_URL} || error_exit "Failed to add App URL to ${APPLICATION_NAME}"
     success "${APP_URL} added to ${APPLICATION_NAME} successfully"
 
     # Remove default URL from the application
     info "Removing Default Domain Name from ${APPLICATION_NAME}..."
-    dokku domains:remove ${APPLICATION_NAME} ${APPLICATION_NAME}.* || error_exit "Failed to remove default App URL from ${APPLICATION_NAME}"
+    # dokku domains:remove ${APPLICATION_NAME} ${APPLICATION_NAME}.* || error_exit "Failed to remove default App URL from ${APPLICATION_NAME}"
     success "Default Domains removed successfully"
 
     # Setup Application Repository Remotely
@@ -310,30 +310,26 @@ function create_app {
         else
             info "No env file provided."
         fi
-
-
     else
        info "INFO: ${PROJECT_DIRECTORY_NAME} repository already on machine"
        info "INFO: Continue to deploy..."
     fi
-    
 
     # Deploy the Application
     deploy_app
-
-    # Check if port mapping is needed
-    if [[ ! ${APP_PORT} = "80" ]]; then
-	info "INFO: Mapping ports appropriately"
-        dokku ports:add ${APPLICATION_NAME} http:80:${APP_PORT} || error_exit "Failed to add Port 80 to ${APPLICATION_NAME}"
-        # dokku ports:add ${APPLICATION_NAME} http:443:${APP_PORT} || error_exit "Failed to add Port 443 to ${APPLICATION_NAME}"    
-	success "Ports mapped successfully"
-    fi
 
     # Add Certificate to the app_url
     info "INFO: Adding Certificate to ${SUBDOMAIN} ..."
     dokku certs:add ${APPLICATION_NAME} < ${CERT_TAR} || error_exit "Failed to add App Certificate to ${APPLICATION_NAME}"
     success "Certificate added successfully"
 
+    # Check if port mapping is needed
+    if [[ ! ${APP_PORT} = "80" ]]; then
+        info "INFO: Mapping ports appropriately"
+        dokku ports:add ${APPLICATION_NAME} http:80:${APP_PORT} || error_exit "Failed to add Port 80 to ${APPLICATION_NAME}"
+        # dokku ports:add ${APPLICATION_NAME} http:443:${APP_PORT} || error_exit "Failed to add Port 443 to ${APPLICATION_NAME}"    
+        success "Ports mapped successfully"
+    fi
 }
 
 # Separate Deployment Functions
@@ -350,7 +346,10 @@ dokku_app_create(){
 # Function to check if the app exists
 check_app_exists() {
     if dokku apps:list | grep -iq "$APPLICATION_NAME"; then
-        echo -e "--------------------------\nApplication - [$APPLICATION_NAME] already exists.\nProceeding to build...\n--------------------------"
+        echo "--------------------------"
+	success "Application - [$APPLICATION_NAME] already exists."
+ 	echo "Proceeding to build..."
+  	echo "--------------------------"
         dokku_app_deploy
     else
         info "WARN: ${APPLICATION_NAME} NOT FOUND"
