@@ -303,7 +303,7 @@ function create_app {
             if [[ -f "${APP_ENV_FILE}" ]]; then
                 info "Copying env file..."
                 cp -r "${APP_ENV_FILE}" "${PROJ_DIR}/.env" || error_exit "Failed to copy ${APP_ENV_FILE} to ${PROJ_DIR}"
-                success "${APP_ENV_FILE} updated"
+                success "Env file updated"
             else
                 info "Env file ${APP_ENV_FILE} does not exist."
             fi
