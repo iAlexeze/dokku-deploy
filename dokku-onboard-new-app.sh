@@ -234,6 +234,16 @@ function cleanup_docker {
     echo -e "\nDone!"
 }
 
+copy_env_file() {
+    if [[ -n "${APP_ENV_FILE}" && -f "${APP_ENV_FILE}" ]]; then
+        info "Copying env file..."
+        cp -r "${APP_ENV_FILE}" "${PROJ_DIR}" || error_exit "Failed to copy ${APP_ENV_FILE} to ${PROJ_DIR}"
+        success "${APP_ENV_FILE} updated"
+    else
+        info "No env file provided or file does not exist."
+    fi
+}
+
 # Function to deploy the app
 function deploy_app {
     # Change to project directory
@@ -286,10 +296,15 @@ function create_app {
        echo "Directory ${PROJECT_DIRECTORY_NAME} or ${APPLICATION_NAME} does not exist. Cloning repository..."
        git clone -b ${BRANCH} git@bitbucket.org:interswitch/${PROJECT_DIRECTORY_NAME} || error_exit "Failed to clone ${PROJECT_DIRECTORY_NAME} Repository"
        success "${PROJECT_DIRECTORY_NAME} cloned successfully"
+
+       # Copy env file into repository if needed during build time
+       copy_env_file
+
     else
        info "INFO: ${PROJECT_DIRECTORY_NAME} repository already on machine"
        info "INFO: Continue to deploy..."
     fi
+    
 
     # Deploy the Application
     deploy_app
