@@ -233,8 +233,8 @@ function cleanup_docker {
 }
 
 # Function to check if the app exists
-function check_app_exists() {
-    if ! dokku apps:list | awk '{print $1}' | awk -v app="$APPLICATION_NAME" '$0 == app' >/dev/null; then
+function check_app_exists {
+    if ! dokku apps:list | grep -iq "$APPLICATION_NAME"; then
         error_exit "$APPLICATION_NAME NOT FOUND"
     else
         echo -e "--------------------------\nApplication - [$APPLICATION_NAME] already exists.\nProceeding to build...\n--------------------------"
@@ -289,3 +289,4 @@ if [[ "${status}" == "0" ]]; then
 else
   fail "Error!"
 fi
+
