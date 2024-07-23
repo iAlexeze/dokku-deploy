@@ -234,22 +234,6 @@ function cleanup_docker {
     echo -e "\nDone!"
 }
 
-copy_env_file() {
-    if [[ -n "${APP_ENV_FILE}" ]]; then
-        info "INFO: env file detected"
-        
-        if [[ -f "${APP_ENV_FILE}" ]]; then
-            info "Copying env file..."
-            cp -r "${APP_ENV_FILE}" "${PROJ_DIR}/.env" || error_exit "Failed to copy ${APP_ENV_FILE} to ${PROJ_DIR}"
-            success "${APP_ENV_FILE} updated"
-        else
-            info "Env file ${APP_ENV_FILE} does not exist."
-        fi
-    else
-        info "No env file provided."
-    fi
-}
-
 # Function to deploy the app
 function deploy_app {
     # Change to project directory
@@ -304,7 +288,20 @@ function create_app {
        success "${PROJECT_DIRECTORY_NAME} cloned successfully"
 
        # Copy env file into repository if needed during build time
-       copy_env_file
+        if [[ -n "${APP_ENV_FILE}" ]]; then
+            info "INFO: env file detected"
+            
+            if [[ -f "${APP_ENV_FILE}" ]]; then
+                info "Copying env file..."
+                cp -r "${APP_ENV_FILE}" "${PROJ_DIR}/.env" || error_exit "Failed to copy ${APP_ENV_FILE} to ${PROJ_DIR}"
+                success "${APP_ENV_FILE} updated"
+            else
+                info "Env file ${APP_ENV_FILE} does not exist."
+            fi
+        else
+            info "No env file provided."
+        fi
+
 
     else
        info "INFO: ${PROJECT_DIRECTORY_NAME} repository already on machine"
