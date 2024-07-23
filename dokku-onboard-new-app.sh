@@ -308,38 +308,32 @@ function create_app {
     fi
 }
 
+# Separate Deployment Functions
+dokku_app_deploy(){
+  deploy_app
+  cleanup_docker
+}
+
+dokku_app_create(){
+    create_app
+    cleanup_docker
+}
+
 # Function to check if the app exists
-function check_app_exists {
-    if ! dokku apps:list | grep -iq "$APPLICATION_NAME"; then
-        info "WARN: ${APPLICATION_NAME} NOT FOUND"
-        create_app
-	success "${APPLICATION_NAME} created successfully"
-    else
+check_app_exists() {
+    if dokku apps:list | grep -iq "$APPLICATION_NAME"; then
         echo -e "--------------------------\nApplication - [$APPLICATION_NAME] already exists.\nProceeding to build...\n--------------------------"
-       
+        dokku_app_deploy
+    else
+        info "WARN: ${APPLICATION_NAME} NOT FOUND"
+        dokku_app_create
+        success "${APPLICATION_NAME} created successfully"
     fi
 }
 
-# # Function to check if the app exists
-# function check_app_exists() {
-#     if dokku apps:list | awk '{print $1}' | awk -v app="${APPLICATION_NAME}" '$0 == app' >/dev/null; then
-#         info "WARN: ${APPLICATION_NAME} NOT FOUND"
-#         create_app
-#     else
-#         echo -e "--------------------------\nApplication - [${APPLICATION_NAME}] already exists.\nProceeding to build...\n--------------------------"
-#     fi
-# }
-
-dokku_app_deploy(){
-
-  add_ssh_key
-  check_app_exists
-  deploy_app
-  cleanup_docker
-
-}
-
-run dokku_app_deploy
+# Main script execution
+add_ssh_key
+run check_app_exists
 
 if [[ "${status}" == "0" ]]; then
   success "Success!"
