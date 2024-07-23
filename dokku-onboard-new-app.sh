@@ -324,11 +324,17 @@ function create_app {
     success "Certificate added successfully"
 
     # Check if port mapping is needed
-    if [[ ! ${APP_PORT} = "80" ]]; then
-        info "INFO: Mapping ports appropriately"
-        dokku ports:add ${APPLICATION_NAME} http:80:${APP_PORT} || error_exit "Failed to add Port 80 to ${APPLICATION_NAME}"
-        # dokku ports:add ${APPLICATION_NAME} http:443:${APP_PORT} || error_exit "Failed to add Port 443 to ${APPLICATION_NAME}"    
-        success "Ports mapped successfully"
+    if [[ -n "${APP_PORT}" ]]; then
+            info "INFO: App port detected"
+
+        if [[ ! ${APP_PORT} = "80" ]]; then
+            info "INFO: Mapping ports appropriately"
+            dokku ports:add ${APPLICATION_NAME} http:80:${APP_PORT} || error_exit "Failed to add Port 80 to ${APPLICATION_NAME}"
+            # dokku ports:add ${APPLICATION_NAME} http:443:${APP_PORT} || error_exit "Failed to add Port 443 to ${APPLICATION_NAME}"    
+            success "Ports mapped successfully"
+        fi
+    else
+        info "-------------------------------------------------------------------------------------------"
     fi
 }
 
