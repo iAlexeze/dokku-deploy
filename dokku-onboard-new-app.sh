@@ -235,12 +235,18 @@ function cleanup_docker {
 }
 
 copy_env_file() {
-    if [[ -n "${APP_ENV_FILE}" && -f "${APP_ENV_FILE}" ]]; then
-        info "Copying env file..."
-        cp -r "${APP_ENV_FILE}" "${PROJ_DIR}" || error_exit "Failed to copy ${APP_ENV_FILE} to ${PROJ_DIR}"
-        success "${APP_ENV_FILE} updated"
+    if [[ -n "${APP_ENV_FILE}" ]]; then
+        info "INFO: env file detected"
+        
+        if [[ -f "${APP_ENV_FILE}" ]]; then
+            info "Copying env file..."
+            cp -r "${APP_ENV_FILE}" "${PROJ_DIR}/.env" || error_exit "Failed to copy ${APP_ENV_FILE} to ${PROJ_DIR}"
+            success "${APP_ENV_FILE} updated"
+        else
+            info "Env file ${APP_ENV_FILE} does not exist."
+        fi
     else
-        info "No env file provided or file does not exist."
+        info "No env file provided."
     fi
 }
 
@@ -355,4 +361,3 @@ if [[ "${status}" == "0" ]]; then
 else
   fail "Error!"
 fi
-
