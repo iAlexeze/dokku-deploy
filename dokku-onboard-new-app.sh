@@ -292,6 +292,14 @@ function create_app {
     fi
 }
 
+function check_app_exists {
+    if ! dokku apps:list | grep -iq "$APPLICATION_NAME"; then
+        error_exit "$APPLICATION_NAME NOT FOUND"
+    else
+        echo -e "--------------------------\nApplication - [$APPLICATION_NAME] already exists.\nProceeding to build...\n--------------------------"
+    fi
+}
+
 
 dokku_app_deploy(){
 
@@ -327,14 +335,6 @@ dokku_app_deploy(){
 #         create_app
 #     fi
 # }
-
-function check_app_exists {
-    if ! dokku apps:list | grep -iq "$APPLICATION_NAME"; then
-        error_exit "$APPLICATION_NAME NOT FOUND"
-    else
-        echo -e "--------------------------\nApplication - [$APPLICATION_NAME] already exists.\nProceeding to build...\n--------------------------"
-    fi
-}
 
 run dokku_app_deploy
 
