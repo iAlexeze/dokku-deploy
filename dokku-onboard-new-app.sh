@@ -321,18 +321,19 @@ function create_app {
     # Deploy the Application
     deploy_app
 
+    # Check if port mapping is needed
+    if [[ ! ${APP_PORT} = "80" ]]; then
+	info "INFO: Mapping ports appropriately"
+        dokku ports:add ${APPLICATION_NAME} http:80:${APP_PORT} || error_exit "Failed to add Port 80 to ${APPLICATION_NAME}"
+        # dokku ports:add ${APPLICATION_NAME} http:443:${APP_PORT} || error_exit "Failed to add Port 443 to ${APPLICATION_NAME}"    
+	success "Ports mapped successfully"
+    fi
+
     # Add Certificate to the app_url
     info "INFO: Adding Certificate to ${SUBDOMAIN} ..."
     dokku certs:add ${APPLICATION_NAME} < ${CERT_TAR} || error_exit "Failed to add App Certificate to ${APPLICATION_NAME}"
     success "Certificate added successfully"
 
-    # Check if port mapping is needed
-    if [[ ! ${APP_PORT} = "80" ]]; then
-	info "INFO: Mapping ports appropriately"
-        dokku ports:add ${APPLICATION_NAME} http:80:${APP_PORT} || error_exit "Failed to add Port 80 to ${APPLICATION_NAME}"
-        dokku ports:add ${APPLICATION_NAME} http:443:${APP_PORT} || error_exit "Failed to add Port 443 to ${APPLICATION_NAME}"    
-	success "Ports mapped successfully"
-    fi
 }
 
 # Separate Deployment Functions
