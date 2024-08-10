@@ -263,6 +263,7 @@ dokku_app_deploy(){
   add_ssh_key
   check_app_exists
   deploy_app
+  cleanup_docker
 
 }
 
@@ -273,3 +274,4 @@ if [[ "${status}" == "0" ]]; then
 else
   fail "Error!"
 fi
+
