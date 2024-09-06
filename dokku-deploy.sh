@@ -175,7 +175,9 @@ function check_app_exists {
         log_warn "$APPLICATION_NAME NOT FOUND!"
         log_info "Creating $APPLICATION_NAME..."
         dokku apps:create $APPLICATION_NAME || log_error "Failed to create application $APPLICATION_NAME"
+        log_success "$APPLICATION_NAME created"
         dokku domains:set $APPLICATION_NAME $APPLICATION_DOMAIN_NAME || log_error "Failed to add domain - [$APPLICATION_DOMAIN_NAME] to application [$APPLICATION_NAME]"
+        log_success "$APPLICATION_DOMAIN_NAME set to $APPLICATION_NAME"
     else
         echo -e "\n--------------------------\nApplication - [$APPLICATION_NAME] already exists.\nProceeding to build...\n--------------------------"
     fi
@@ -222,8 +224,9 @@ function deploy_app {
             cd $DEPLOYMENT_DIR || log_error "Failed to change directory to $DEPLOYMENT_DIR"
             if [[ ! -d $PROJ_DIR ]]; then          
                 log_warn "Project Directory $PROJ_DIR NOT FOUND!"
-                log_info "Creating Project Directory"
+                log_info "Creating Project Directory..."
                 git clone -b $BRANCH $REPO_URL || log_error "Failed to clone $PROJECT_DIRECTORY_NAME to $PROJ_DIR"
+                log_sucess "$APPLICATION_NAME Project Directory created"
                 ready_to_deploy
             else
                 # If project directory exists, proceed to deploy
@@ -232,6 +235,7 @@ function deploy_app {
         else
             # Create deployment directory if it doesn't exist
             mkdir -p $DEPLOYMENT_DIR || log_error "Failed to make directory - $DEPLOYMENT_DIR"
+            log_success "$DEPLOYMENT_DIR Deployment directory created"
             check_deployment_dir  # Recursive call to recheck the created directory
         fi
     }
