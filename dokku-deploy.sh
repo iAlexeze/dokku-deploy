@@ -177,7 +177,7 @@ function check_app_exists {
         dokku apps:create $APPLICATION_NAME || log_error "Failed to create application $APPLICATION_NAME"
         dokku domains:set $APPLICATION_NAME $APPLICATION_DOMAIN_NAME || log_error "Failed to add domain - [$APPLICATION_DOMAIN_NAME] to application [$APPLICATION_NAME]"
     else
-        log_info "\n--------------------------\nApplication - [$APPLICATION_NAME] already exists.\nProceeding to build...\n--------------------------"
+        echo -e "\n--------------------------\nApplication - [$APPLICATION_NAME] already exists.\nProceeding to build...\n--------------------------"
     fi
 }
 
@@ -212,7 +212,7 @@ function deploy_app {
         fi
 
         # Deployment status
-        log_success "\n---------------------------------------\n$APPLICATION_NAME Deployment is Successful\n---------------------------------------"
+        echo -e "\n---------------------------------------\n$APPLICATION_NAME Deployment is Successful\n---------------------------------------"
     }
 
     # Function to check the deployment directory
@@ -252,7 +252,7 @@ dokku_app_deploy(){
 run dokku_app_deploy
 
 if [[ "${status}" == "0" ]]; then
-  log_success
+  log_success "Deployment run finished"
 else
-  log_error
+  log_error "Failed to complete deployment run"
 fi
