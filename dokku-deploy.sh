@@ -53,7 +53,7 @@ log_info() {
 #   None
 #######################################
 log_warn() {
-    echo -e "$(date '+%Y-%m-%d %H:%M:%S') ${yellow}INFO: ${reset} $1"
+    echo -e "$(date '+%Y-%m-%d %H:%M:%S') ${yellow}WARN: ${reset} $1"
 }
 
 #######################################
