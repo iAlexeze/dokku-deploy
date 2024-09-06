@@ -144,6 +144,12 @@ APPLICATION_DOMAIN_NAME="${DOMAIN_NAME}"
 
 # Function to add SSH key
 function add_ssh_key {
+    # Check if the authorized_keys file exists
+    if [ ! -f "$SSH_DIR/authorized_keys" ]; then
+        log_info "The authorized_keys file does not exist. Creating it..."
+        touch "$SSH_DIR/authorized_keys" || log_error "Failed to create authorized_keys file."
+        chmod 600 "$SSH_DIR/authorized_keys"  # Set appropriate permissions
+    fi
     # Check if $SS_KEY is already in authorized_keys
     if ! grep -qxF "$SSH_ACCESS_KEY" "$SSH_DIR/authorized_keys"; then
     log_info "$SSH_ACCESS_KEY" >> "$SSH_DIR/authorized_keys"
