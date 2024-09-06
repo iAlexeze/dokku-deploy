@@ -30,38 +30,6 @@ green="\\e[32m"
 yellow="\\e[33m"
 reset="\\e[0m"
 
-# Logging functions
-log_info() {
-    echo -e "$(date '+%Y-%m-%d %H:%M:%S') ${blue}INFO: ${reset} $1"
-}
-
-log_warn() {
-    echo -e "$(date '+%Y-%m-%d %H:%M:%S') ${yellow}INFO: ${reset} $1"
-}
-log_success() {
-    echo -e "$(date '+%Y-%m-%d %H:%M:%S') ${green}SUCCESS: ✔${reset} $1"
-}
-
-log_error() {
-    echo -e "$(date '+%Y-%m-%d %H:%M:%S') ${red}ERROR ✖${reset} $1"
-}
-
-success_message() {
-    echo -e "$(date '+%Y-%m-%d %H:%M:%S') ${green}✔ $1 ${reset}"
-}
-
-check_exit_status() {
-    local success=$1
-    local fail=$2
-
-    if [ $? -eq 0 ]; then
-        log_success "$success"
-    else
-        log_error "$fail"
-        exit 1
-    fi
-}
-
 #######################################
 # echoes a message in blue
 # Globals:
@@ -71,32 +39,8 @@ check_exit_status() {
 # Returns:
 #   None
 #######################################
-info() { echo -e "${blue}INFO: $*${reset}"; }
-
-#######################################
-# echoes a message in red
-# Globals:
-#   None
-# Arguments:
-#   Message
-# Returns:
-#   None
-#######################################
-error() { echo -e "${red}ERROR: $*${reset}"; }
-
-#######################################
-# echoes a message in grey. Only if debug mode is enabled
-# Globals:
-#   DEBUG
-# Arguments:
-#   Message
-# Returns:
-#   None
-#######################################
-debug() {
-  if [[ "${DEBUG}" == "true" ]]; then
-    echo -e "${gray}DEBUG: $*${reset}";
-  fi
+log_info() {
+    echo -e "$(date '+%Y-%m-%d %H:%M:%S') ${blue}INFO: ${reset} $1"
 }
 
 #######################################
@@ -108,7 +52,9 @@ debug() {
 # Returns:
 #   None
 #######################################
-warning() { echo -e "${yellow}✔ $*${reset}"; }
+log_warn() {
+    echo -e "$(date '+%Y-%m-%d %H:%M:%S') ${yellow}INFO: ${reset} $1"
+}
 
 #######################################
 # echoes a message in green
@@ -119,10 +65,12 @@ warning() { echo -e "${yellow}✔ $*${reset}"; }
 # Returns:
 #   None
 #######################################
-success() { echo -e "${green}✔ $*${reset}"; }
+log_success() {
+    echo -e "$(date '+%Y-%m-%d %H:%M:%S') ${green}SUCCESS: ✔${reset} $1"
+}
 
 #######################################
-# echoes a message in red and terminates the programm
+# echoes a message in red
 # Globals:
 #   None
 # Arguments:
@@ -130,9 +78,24 @@ success() { echo -e "${green}✔ $*${reset}"; }
 # Returns:
 #   None
 #######################################
-fail() { echo -e "${red}✖ $*${reset}"; exit 1; }
+# Set Program Name
+PROGNAME=$(basename "$0")
 
-## Enable debug mode.
+# Custom error handling function
+log_error() {
+    echo -e "$(date '+%Y-%m-%d %H:%M:%S') ${red}ERROR ✖${reset} ${PROGNAME}: ${1:-"Unknown Error"}" 1>&2
+    exit 1
+}
+
+#######################################
+# echoes a message in grey. Only if debug mode is enabled
+# Globals:
+#   DEBUG
+# Arguments:
+#   Message
+# Returns:
+#   None
+#######################################
 enable_debug() {
   if [[ "${DEBUG}" == "true" ]]; then
     info "Enabling debug mode."
@@ -160,63 +123,9 @@ run() {
   set -e
 }
 
-#######################################
-# Initialize array variable with the specified name
-# https://confluence.atlassian.com/bitbucket/advanced-techniques-for-writing-pipes-969511009.html
-# Arguments:
-#   array_var: the name of the variable
-# Returns:
-#   None
-#######################################
-init_array_var() {
-  local array_var=${1}
-  local count_var=${array_var}_COUNT
-  for (( i = 0; i < ${!count_var:=0}; i++ ))
-  do
-    eval "${array_var}"[$i]='$'"${array_var}"_${i}
-  done
-}
-
-#######################################
-# Check if a newer version is available and show a warning message
-# Globals:
-#   None
-# Arguments:
-#   None
-# Returns:
-#   Message
-#######################################
-check_for_newer_version() {
-  set +e
-  if [[ -f "/pipe.yml" ]]; then
-    local pipe_name
-    local pipe_repository
-    local pipe_current_version
-    local pipe_latest_version
-    local wget_debug_level="--quiet"
-
-    pipe_name=$(awk -F ": " '$1=="name" {print $NF;exit;}' /pipe.yml)
-    pipe_repository=$(awk '/repository/ {print $NF}' /pipe.yml)
-    pipe_current_version=$(awk -F ":" '/image/ {print $NF}' /pipe.yml)
-
-    if [[ "${DEBUG}" == "true" ]]; then
-      warning "Starting check for the new version of the pipe..."
-      wget_debug_level="--verbose"
-    fi
-    pipe_latest_version=$(wget "${wget_debug_level}" -O - "${pipe_repository}"/raw/master/pipe.yml | awk -F ":" '/image/ {print $NF}')
-
-    if [[ "${pipe_current_version}" != "${pipe_latest_version}" ]]; then
-      warning "New version available: ${pipe_name} ${pipe_current_version} to ${pipe_latest_version}"
-    fi
-  fi
-  set -e
-}
-
-# End standard 'imports'
-
 DEPLOY_SCRIPT="./dokku_deploy.sh"
 
-info "Executing Deployment...."
+log_info "Executing Deployment...."
 
 enable_debug
 
@@ -233,25 +142,16 @@ APPLICATION_REPO="git@bitbucket.org:interswitch"
 REPO_URL="${APPLICATION_REPO}/${PROJECT_DIRECTORY_NAME}"
 APPLICATION_DOMAIN_NAME="${DOMAIN_NAME}"
 
-# Set Program Name
-PROGNAME=$(basename "$0")
-
-# Custom error handling function
-function error_exit {
-    echo -e "${PROGNAME}: ${1:-"Unknown Error"}" 1>&2
-    exit 1
-}
-
 # Function to add SSH key
 function add_ssh_key {
     if ! ssh-add -l > /dev/null 2>&1; then
         log_info "Starting ssh-agent..."
-        eval "$(ssh-agent -s)" > /dev/null 2>&1 || error_exit "Failed to start ssh-agent"
+        eval "$(ssh-agent -s)" > /dev/null 2>&1 || log_error "Failed to start ssh-agent"
     else
         log_info "ssh-agent is already running."
     fi
 
-    ssh-add "$SSH_ACCESS_KEY" > /dev/null 2>&1 || error_exit "Failed to add SSH key.  \nEnter a BITBUCKET_CLONE_KEY_NAME already added to your bitbucket profile and also located at ~/.ssh in the server"
+    ssh-add "$SSH_ACCESS_KEY" > /dev/null 2>&1 || log_error "Failed to add SSH key.  \nEnter a BITBUCKET_CLONE_KEY_NAME already added to your bitbucket profile and also located at ~/.ssh in the server"
 }
 
 # Function to clean up unused images and resources
@@ -271,8 +171,8 @@ function cleanup_docker {
 function check_app_exists {
     if ! dokku apps:list | grep -iq "$APPLICATION_NAME"; then
         log_info "$APPLICATION_NAME NOT FOUND! \nCreating $APPLICATION_NAME..."
-        dokku app:create $APPLICATION_NAME || error_exit "Failed to create application $APPLICATION_NAME"
-        dokku domains:set $APPLICATION_NAME $APPLICATION_DOMAIN_NAME || error_exit "Failed to add domain - [$APPLICATION_DOMAIN_NAME] to application [$APPLICATION_NAME]"
+        dokku app:create $APPLICATION_NAME || log_error "Failed to create application $APPLICATION_NAME"
+        dokku domains:set $APPLICATION_NAME $APPLICATION_DOMAIN_NAME || log_error "Failed to add domain - [$APPLICATION_DOMAIN_NAME] to application [$APPLICATION_NAME]"
     else
         log_info "--------------------------\nApplication - [$APPLICATION_NAME] already exists.\nProceeding to build...\n--------------------------"
     fi
@@ -283,26 +183,26 @@ function deploy_app {
     # Function to check if the app is ready to deploy
     ready_to_deploy() {
         # Change to the project directory
-        cd "$PROJ_DIR" || error_exit "Failed to change directory to $PROJ_DIR"
+        cd "$PROJ_DIR" || log_error "Failed to change directory to $PROJ_DIR"
 
         # Pull latest changes
-        git pull origin $BRANCH || error_exit "Failed to pull latest changes"
+        git pull origin $BRANCH || log_error "Failed to pull latest changes"
 
         # Switch to the deployment branch
-        git switch $BRANCH || error_exit "Failed to switch to deployment branch"
+        git switch $BRANCH || log_error "Failed to switch to deployment branch"
 
         # Build Docker image
-        docker build -t "$IMAGE_NAME" . || error_exit "Failed to build $APPLICATION_NAME image"
+        docker build -t "$IMAGE_NAME" . || log_error "Failed to build $APPLICATION_NAME image"
 
         # Deploy using the latest image
-        dokku git:from-image "$APPLICATION_NAME" "$IMAGE_NAME" || error_exit "Failed to deploy $APPLICATION_NAME"
+        dokku git:from-image "$APPLICATION_NAME" "$IMAGE_NAME" || log_error "Failed to deploy $APPLICATION_NAME"
 
         # Show report for the app
-        dokku ps:report "$APPLICATION_NAME" || error_exit "Failed to show app report"
+        dokku ps:report "$APPLICATION_NAME" || log_error "Failed to show app report"
 
         # Check if the app is running
         if ! docker ps --filter "name=$APPLICATION_NAME" --format "{{.Names}}" | grep -q "$APPLICATION_NAME"; then
-            error_exit "App is not running"
+            log_error "App is not running"
         else
             log_info "App $APPLICATION_NAME is running"
             docker ps --filter "name=$APPLICATION_NAME"
@@ -315,11 +215,11 @@ function deploy_app {
     # Function to check the deployment directory
     check_deployment_dir() { 
         if [[ -d $DEPLOYMENT_DIR ]]; then
-            cd $DEPLOYMENT_DIR || error_exit "Failed to change directory to $DEPLOYMENT_DIR"
+            cd $DEPLOYMENT_DIR || log_error "Failed to change directory to $DEPLOYMENT_DIR"
             if [[ ! -d $PROJ_DIR ]]; then          
                 log_warn "Project Directory $PROJ_DIR NOT FOUND!"
                 log_info "Creating Project Directory"
-                git clone -b $BRANCH $REPO_URL || error_exit "Failed to clone $PROJECT_DIRECTORY_NAME to $PROJ_DIR"
+                git clone -b $BRANCH $REPO_URL || log_error "Failed to clone $PROJECT_DIRECTORY_NAME to $PROJ_DIR"
                 ready_to_deploy
             else
                 # If project directory exists, proceed to deploy
@@ -327,7 +227,7 @@ function deploy_app {
             fi
         else
             # Create deployment directory if it doesn't exist
-            mkdir -p $DEPLOYMENT_DIR || error_exit "Failed to make directory - $DEPLOYMENT_DIR"
+            mkdir -p $DEPLOYMENT_DIR || log_error "Failed to make directory - $DEPLOYMENT_DIR"
             check_deployment_dir  # Recursive call to recheck the created directory
         fi
     }
@@ -349,7 +249,7 @@ dokku_app_deploy(){
 run dokku_app_deploy
 
 if [[ "${status}" == "0" ]]; then
-  success "Success!"
+  log_success
 else
-  fail "Error!"
+  log_error
 fi
