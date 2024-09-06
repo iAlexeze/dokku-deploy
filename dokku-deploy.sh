@@ -174,7 +174,7 @@ function check_app_exists {
         dokku app:create $APPLICATION_NAME || log_error "Failed to create application $APPLICATION_NAME"
         dokku domains:set $APPLICATION_NAME $APPLICATION_DOMAIN_NAME || log_error "Failed to add domain - [$APPLICATION_DOMAIN_NAME] to application [$APPLICATION_NAME]"
     else
-        log_info "--------------------------\nApplication - [$APPLICATION_NAME] already exists.\nProceeding to build...\n--------------------------"
+        log_info "\n--------------------------\nApplication - [$APPLICATION_NAME] already exists.\nProceeding to build...\n--------------------------"
     fi
 }
 
