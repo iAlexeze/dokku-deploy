@@ -207,7 +207,8 @@ function deploy_app {
         if ! docker ps --filter "name=$APPLICATION_NAME" --format "{{.Names}}" | grep -q "$APPLICATION_NAME"; then
             log_error "App is not running"
         else
-            log_info "App $APPLICATION_NAME is running"
+            echo
+            log_info "App ${green}$APPLICATION_NAME${reset} is running"
             docker ps --filter "name=$APPLICATION_NAME"
         fi
 
