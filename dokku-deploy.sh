@@ -144,13 +144,6 @@ APPLICATION_DOMAIN_NAME="${DOMAIN_NAME}"
 
 # Function to add SSH key
 function add_ssh_key {
-    # Check if $SSH_ACCESS_KEY is already in authorized_keys
-    if ! grep -qxF "$SSH_ACCESS_KEY" "$SSH_DIR/authorized_keys"; then
-    log_info "$SSH_ACCESS_KEY" >> "$SSH_DIR/authorized_keys"
-    log_info "SSH key added to authorized_keys."
-    else
-    log_info "SSH key is already present in authorized_keys."
-    fi
     # Add SSH-Key to ssh-agent
     if ! ssh-add -l > /dev/null 2>&1; then
         log_info "Starting ssh-agent..."
