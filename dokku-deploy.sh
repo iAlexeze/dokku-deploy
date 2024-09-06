@@ -264,7 +264,7 @@ function cleanup_docker {
         echo -n "."
         sleep 1
     done
-    log_info -e "\nDone!"
+    log_info "\n\nDone!"
 }
 
 # Function to check if the app exists
