@@ -300,13 +300,13 @@ function deploy_app {
             log_warn "No changes detected. Rebuilding the app..."
             dokku ps:rebuild "$APPLICATION_NAME" || log_error "Failed to rebuild $APPLICATION_NAME"
             log_success "App Rebuilt successfully"
+            show_app_info
+            exit 0
         else
             log_info "Enabling SSL Certificate..."
             enable_ssl
+            show_app_info
         fi
-
-        # Show app info
-        show_app_info
     }
 
     # Call the deployment setup function
