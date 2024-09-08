@@ -219,9 +219,7 @@ function deploy_app {
         if echo "$DEPLOY_OUTPUT" | grep -q "No changes detected, skipping git commit"; then
             log_warn "No changes detected. Rebuilding the app..."
             dokku ps:rebuild "$APPLICATION_NAME" || log_error "Failed to rebuild $APPLICATION_NAME"
-        elif echo "$DEPLOY_OUTPUT" | grep -q "Updating git repository with specified build context"; then
-            log_info "Image is up to date. Proceeding with rebuild..."
-            dokku ps:rebuild "$APPLICATION_NAME" || log_error "Failed to rebuild $APPLICATION_NAME"
+            exit 0
         else
             log_error "Failed to deploy $APPLICATION_NAME: $DEPLOY_OUTPUT"
         fi
