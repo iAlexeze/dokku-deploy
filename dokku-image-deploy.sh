@@ -261,6 +261,19 @@ function enable_ssl {
     fi
 }
 
+# Function to check exit status
+check_exit_status() {
+    local success_message="$1"
+    local failure_message="$2"
+
+    if [ $? -eq 0 ]; then
+        log_success "$success_message"
+    else
+        log_error "$failure_message"
+        exit 1
+    fi
+}
+
 # Function to deploy the app
 function deploy_app {
     # Function to handle app deployment
@@ -281,20 +294,7 @@ function deploy_app {
             echo -e "\n---------------------------------------\n$APPLICATION_NAME Deployment is Successful\n---------------------------------------"
         }
 
-        # Function to check exit status
-        check_exit_status() {
-            local success=$1
-            local fail=$2
 
-            if [ $? -eq 0 ]; then
-                log_success "$success"
-            else
-                log_error "$fail"
-                exit 1
-            fi
-        }
-
-        
         log_info "Deployment run started"
 
         # Run the deployment command, using tee to capture output
@@ -304,22 +304,21 @@ function deploy_app {
         # Check for specific error message indicating image is the same
         if echo "$DEPLOY_OUTPUT" | grep -q "No changes detected, skipping git commit"; then
             log_warn "No changes detected. Rebuilding the app..."
-            dokku ps:rebuild "$APPLICATION_NAME" || log_error "Failed to rebuild $APPLICATION_NAME"
-            log_success "App Rebuilt successfully"
+            dokku ps:rebuild "$APPLICATION_NAME"
+            check_exit_status "App rebuilt successfully" "Failed to rebuild $APPLICATION_NAME"
             show_app_info
             exit 0
         else
-            check_exit_status "App Build complete" "Failed to deploy $APPLICATION_NAME"
+            # Check the deployment status
+            check_exit_status "App build complete" "Failed to deploy $APPLICATION_NAME"
             log_info "Enabling SSL Certificate..."
             enable_ssl
             show_app_info
         fi
-
-    }
-    # Call the deployment setup function
-    app_deploy_setup
+            # Call the deployment setup function
+            app_deploy_setup
+        }
 }
-    
 # Main function to deploy app
 dokku_app_deploy(){
 
