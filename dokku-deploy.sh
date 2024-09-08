@@ -174,10 +174,16 @@ function check_app_exists {
     if ! dokku apps:list | grep -iq "$APPLICATION_NAME"; then
         log_warn "$APPLICATION_NAME NOT FOUND!"
         log_info "Creating $APPLICATION_NAME..."
-        dokku apps:create $APPLICATION_NAME || log_error "Failed to create application $APPLICATION_NAME"
+        dokku apps:create "$APPLICATION_NAME" || log_error "Failed to create application $APPLICATION_NAME"
         log_success "$APPLICATION_NAME created"
-        dokku domains:set $APPLICATION_NAME $APPLICATION_DOMAIN_NAME || log_error "Failed to add domain - [$APPLICATION_DOMAIN_NAME] to application [$APPLICATION_NAME]"
-        log_success "$APPLICATION_DOMAIN_NAME set to $APPLICATION_NAME"
+
+        # Check if APPLICATION_DOMAIN_NAME is set
+        if [ -n "$APPLICATION_DOMAIN_NAME" ]; then
+            dokku domains:set "$APPLICATION_NAME" "$APPLICATION_DOMAIN_NAME" || log_error "Failed to add domain - [$APPLICATION_DOMAIN_NAME] to application [$APPLICATION_NAME]"
+            log_success "$APPLICATION_DOMAIN_NAME set to $APPLICATION_NAME"
+        else
+            log_warn "Domain variable EMPTY. You can set the domain for the application manually using: ${yellow}dokku domains:set $APPLICATION_NAME $APPLICATION_DOMAIN_NAME${reset}"
+        fi
     else
         echo -e "\n--------------------------\nApplication - [$APPLICATION_NAME] already exists.\nProceeding to build...\n--------------------------"
     fi
