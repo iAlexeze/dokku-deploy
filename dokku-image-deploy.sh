@@ -180,7 +180,7 @@ function cleanup_docker {
 # Function to check if the app exists
 function check_app_exists {
     if ! dokku apps:list | grep -iq "$APPLICATION_NAME"; then
-        log_warn "$APPLICATION_NAME NOT FOUND!"
+        log_warn "$APPLICATION_NAME application NOT FOUND!"
         log_info "Creating $APPLICATION_NAME..."
         dokku apps:create "$APPLICATION_NAME" || log_error "Failed to create application $APPLICATION_NAME"
         log_success "$APPLICATION_NAME created"
