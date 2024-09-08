@@ -283,25 +283,11 @@ function deploy_app {
         
         log_info "Deployment run started"
 
-        # Create a named pipe to capture output
-        pipe=$(mktemp -u)
-        mkfifo "$pipe"
-
-        # Redirect the output to the pipe and tee it to both the console and a variable
-        DEPLOY_OUTPUT=""
-        tee_output() {
-            while IFS= read -r line; do
-                echo "$line"
-                DEPLOY_OUTPUT="${DEPLOY_OUTPUT}${line}"$'\n'
-            done
-        }
-
         # Run the deployment command, using tee to capture output
         log_info "Deploying using the latest image..."
-        dokku git:from-image "$APPLICATION_NAME" "$IMAGE_NAME" 2>&1 | tee "$pipe" & tee_output < "$pipe"
 
         # Check for specific error message indicating image is the same
-        if echo "$DEPLOY_OUTPUT" | grep -q "No changes detected, skipping git commit"; then
+        if dokku git:from-image "$APPLICATION_NAME" "$IMAGE_NAME" | grep -q "No changes detected, skipping git commit"; then
             log_warn "No changes detected. Rebuilding the app..."
             dokku ps:rebuild "$APPLICATION_NAME" || log_error "Failed to rebuild $APPLICATION_NAME"
             log_success "App Rebuilt successfully"
@@ -313,8 +299,6 @@ function deploy_app {
             show_app_info
         fi
 
-        # Clean up named pipe
-        rm -f "$pipe"
     }
     # Call the deployment setup function
     app_deploy_setup
