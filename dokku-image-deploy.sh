@@ -262,7 +262,7 @@ function enable_ssl {
 }
 
 # Function to check exit status
-check_exit_status() {
+function check_exit_status {
     local success_message="$1"
     local failure_message="$2"
 
@@ -274,51 +274,45 @@ check_exit_status() {
     fi
 }
 
-# Function to deploy the app
-function deploy_app {
-    # Function to handle app deployment
-    app_deploy_setup() {   
-
-        # Function to show app info
-        show_app_info() {
-            # Show report for the app
-            dokku ps:report "$APPLICATION_NAME" || log_error "Failed to show app report"
-            # Check if the app is running
-            if ! docker ps --filter "name=$APPLICATION_NAME" --format "{{.Names}}" | grep -q "$APPLICATION_NAME"; then
-                log_error "App is not running"
-            else
-                log_success "App $APPLICATION_NAME is running"
-                docker ps --filter "name=$APPLICATION_NAME"
-            fi
-            # Deployment status
-            echo -e "\n---------------------------------------\n$APPLICATION_NAME Deployment is Successful\n---------------------------------------"
-        }
-
-
-        log_info "Deployment run started"
-
-        # Run the deployment command, using tee to capture output
-        log_info "Deploying using the latest image..."
-        DEPLOY_OUTPUT=$(dokku git:from-image "$APPLICATION_NAME" "$IMAGE_NAME" 2>&1 | tee /dev/tty)
-
-        # Check for specific error message indicating image is the same
-        if echo "$DEPLOY_OUTPUT" | grep -q "No changes detected, skipping git commit"; then
-            log_warn "No changes detected. Rebuilding the app..."
-            dokku ps:rebuild "$APPLICATION_NAME"
-            check_exit_status "App rebuilt successfully" "Failed to rebuild $APPLICATION_NAME"
-            show_app_info
-            exit 0
-        else
-            # Check the deployment status
-            check_exit_status "App build complete" "Failed to deploy $APPLICATION_NAME"
-            log_info "Enabling SSL Certificate..."
-            enable_ssl
-            show_app_info
-        fi
-            # Call the deployment setup function
-            app_deploy_setup
-        }
+# Function to show app info
+function show_app_info {
+    # Show report for the app
+    dokku ps:report "$APPLICATION_NAME" || log_error "Failed to show app report"
+    # Check if the app is running
+    if ! docker ps --filter "name=$APPLICATION_NAME" --format "{{.Names}}" | grep -q "$APPLICATION_NAME"; then
+        log_error "App is not running"
+    else
+        log_success "App $APPLICATION_NAME is running"
+        docker ps --filter "name=$APPLICATION_NAME"
+    fi
+    # Deployment status
+    echo -e "\n---------------------------------------\n$APPLICATION_NAME Deployment is Successful\n---------------------------------------"
 }
+
+# Function to deploy the app
+function deploy_app {   
+    log_info "Deployment run started"
+
+    # Run the deployment command, using tee to capture output
+    log_info "Deploying using the latest image..."
+    DEPLOY_OUTPUT=$(dokku git:from-image "$APPLICATION_NAME" "$IMAGE_NAME" 2>&1 | tee /dev/tty)
+
+    # Check for specific error message indicating image is the same
+    if echo "$DEPLOY_OUTPUT" | grep -q "No changes detected, skipping git commit"; then
+        log_warn "No changes detected. Rebuilding the app..."
+        dokku ps:rebuild "$APPLICATION_NAME"
+        check_exit_status "App rebuilt successfully" "Failed to rebuild $APPLICATION_NAME"
+        show_app_info
+        exit 0
+    else
+        # Check the deployment status
+        check_exit_status "App build complete" "Failed to deploy $APPLICATION_NAME"
+        log_info "Enabling SSL Certificate..."
+        enable_ssl
+        show_app_info
+    fi
+}
+
 # Main function to deploy app
 dokku_app_deploy(){
 
