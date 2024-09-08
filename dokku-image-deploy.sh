@@ -197,19 +197,66 @@ function check_app_exists {
         fi
     }
 
+    # Main logic to check if the app exists
+    if ! dokku apps:list | grep -iq "$APPLICATION_NAME"; then
+        log_warn "$APPLICATION_NAME application NOT FOUND!"
+        create_app
+        set_app_domain
+    else
+        echo -e "\n--------------------------\nApplication - [$APPLICATION_NAME] already exists.\nProceeding to build...\n--------------------------"
+    fi
+}
+
+# Function to deploy the app
+function deploy_app {
+    # Function to handle app deployment
+    app_deploy_setup() {   
+        log_info "Deployment run started"
+        # Deploy using the latest image and capture output
+        DEPLOY_OUTPUT=$(dokku git:from-image "$APPLICATION_NAME" "$IMAGE_NAME" 2>&1)
+
+        # Check for specific error message indicating image is the same
+        if echo "$DEPLOY_OUTPUT" | grep -q "No changes detected, skipping git commit"; then
+            log_warn "No changes detected. Rebuilding the app..."
+            dokku ps:rebuild "$APPLICATION_NAME" || log_error "Failed to rebuild $APPLICATION_NAME"
+        elif echo "$DEPLOY_OUTPUT" | grep -q "Updating git repository with specified build context"; then
+            log_info "Image is up to date. Proceeding with rebuild..."
+            dokku ps:rebuild "$APPLICATION_NAME" || log_error "Failed to rebuild $APPLICATION_NAME"
+        else
+            log_error "Failed to deploy $APPLICATION_NAME: $DEPLOY_OUTPUT"
+        fi
+
+        # Show report for the app
+        dokku ps:report "$APPLICATION_NAME" || log_error "Failed to show app report"
+
+        # Check if the app is running
+        if ! docker ps --filter "name=$APPLICATION_NAME" --format "{{.Names}}" | grep -q "$APPLICATION_NAME"; then
+            log_error "App is not running"
+        else
+            log_success "App $APPLICATION_NAME is running"
+            docker ps --filter "name=$APPLICATION_NAME"
+        fi
+
+        # Deployment status
+        echo -e "\n---------------------------------------\n$APPLICATION_NAME Deployment is Successful\n---------------------------------------"
+    }
+
     # Function to enable SSL certificate using Let's Encrypt
     enable_ssl() {
-        if dokku letsencrypt:enable "$APPLICATION_NAME" "$APPLICATION_DOMAIN_NAME"; then
-            log_success "SSL Certificate obtained successfully for $APPLICATION_DOMAIN_NAME"
-        else
-            log_warn "Failed to add Let's Encrypt to $APPLICATION_NAME"
-            log_warn "You can set the domain for the application manually using: ${yellow}dokku domains:set <APPLICATION_NAME> <APPLICATION_DOMAIN_NAME> ${reset}"
+        if [ -n "$APPLICATION_DOMAIN_NAME" ]; then
+            log_info "Setting Up Let's Encrypt SSL Certificate for $APPLICATION_DOMAIN_NAME..."
+            if dokku letsencrypt:enable "$APPLICATION_NAME" "$APPLICATION_DOMAIN_NAME"; then
+                log_success "SSL Certificate obtained successfully for $APPLICATION_DOMAIN_NAME"
+            else
+                log_warn "Failed to add Let's Encrypt to $APPLICATION_NAME"
+                log_warn "You can set the domain for the application manually using: ${yellow}dokku domains:set <APPLICATION_NAME> <APPLICATION_DOMAIN_NAME> ${reset}"
+            fi
         fi
     }
 
     # Function to check if Let's Encrypt plugin is installed
     check_letsencrypt_installed() {
-        if ! dokku plugin:list | grep -i "letsencrypt"; then
+        if ! dokku plugin:list | grep -iq "letsencrypt"; then
             log_warn "Let's Encrypt plugin NOT FOUND!"
             log_warn "Install Let's Encrypt plugin by running:"
             log_warn "sudo dokku plugin:install https://github.com/dokku/dokku-letsencrypt.git"
@@ -220,44 +267,9 @@ function check_app_exists {
         fi
     }
 
-    # Main logic to check if the app exists
-    if ! dokku apps:list | grep -iq "$APPLICATION_NAME"; then
-        log_warn "$APPLICATION_NAME application NOT FOUND!"
-        create_app
-        set_app_domain
-        check_letsencrypt_installed
-    else
-        echo -e "\n--------------------------\nApplication - [$APPLICATION_NAME] already exists.\nProceeding to build...\n--------------------------"
-    fi
-}
-
-# Function to deploy the app
-function deploy_app {
-   log_info "Deployment run started"
-
-    # Deploy using the latest image and capture output
-    DEPLOY_OUTPUT=$(dokku git:from-image "$APPLICATION_NAME" "$IMAGE_NAME" 2>&1)
-
-    # Check for specific error message indicating image is the same
-    if echo "$DEPLOY_OUTPUT" | grep -q "No changes detected, skipping git commit"; then
-        log_warn "No changes detected. Rebuilding the app..."
-        dokku ps:rebuild "$APPLICATION_NAME" || log_error "Failed to rebuild $APPLICATION_NAME"
-    else
-        log_error "Failed to deploy $APPLICATION_NAME: $DEPLOY_OUTPUT"
-    fi
-    # Show report for the app
-    dokku ps:report "$APPLICATION_NAME" || log_error "Failed to show app report"
-
-    # Check if app is running
-    if ! docker ps --filter "name=$APPLICATION_NAME" --format "{{.Names}}" | grep -q "$APPLICATION_NAME"; then
-        log_error "App is not running"
-    else
-        echo "App $APPLICATION_NAME" is running
-        docker ps --filter "name=$APPLICATION_NAME"
-    fi
-
-    # Deployment status
-    echo -e "\n---------------------------------------\n$APPLICATION_NAME Deployment is Successful\n---------------------------------------"
+    # Main function to deploy app
+    app_deploy_setup
+    check_letsencrypt_installed
 }
 
 dokku_app_deploy(){
