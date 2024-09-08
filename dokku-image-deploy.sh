@@ -230,13 +230,11 @@ function deploy_app {
         
         log_info "Deployment run started"
 
-        # Declare temp file to store logs
-        TEMP_LOG_FILE="/tmp/dokku_$(date +%s)_$RANDOM"
         # Deploy using the latest image and capture output
-        DEPLOY_OUTPUT=$(dokku git:from-image "$APPLICATION_NAME" "$IMAGE_NAME" | tee "$TEMP_LOG_FILE")
+        DEPLOY_OUTPUT=$(dokku git:from-image "$APPLICATION_NAME" "$IMAGE_NAME")
 
         # Check for specific error message indicating image is the same
-        if echo "$TEMP_LOG_FILE" | grep -q "No changes detected, skipping git commit"; then
+        if echo "$DEPLOY_OUTPUT" | grep -q "No changes detected, skipping git commit"; then
             log_warn "No changes detected. Rebuilding the app..."
             dokku ps:rebuild "$APPLICATION_NAME" || log_error "Failed to rebuild $APPLICATION_NAME"
             log_success "App Rebuilt successfully"
