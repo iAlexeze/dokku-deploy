@@ -215,11 +215,10 @@ function check_app_exists {
             log_warn "sudo dokku plugin:install https://github.com/dokku/dokku-letsencrypt.git"
         else
             log_success "Let's Encrypt plugin already installed."
-            log_info "Enabling SSL Certificate for APPLICATION_DOMAIN_NAME"
+            log_info "Enabling SSL Certificate for $APPLICATION_DOMAIN_NAME"
             enable_ssl
         fi
     }
-
 
     # Main logic to check if the app exists
     if ! dokku apps:list | grep -iq "$APPLICATION_NAME"; then
