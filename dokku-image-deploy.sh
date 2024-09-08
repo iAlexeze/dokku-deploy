@@ -207,53 +207,8 @@ function check_app_exists {
     fi
 }
 
-# Function to deploy the app
-function deploy_app {
-    # Function to handle app deployment
-    app_deploy_setup() {   
-
-        # Function to show app info
-        show_app_info() {
-            # Show report for the app
-            dokku ps:report "$APPLICATION_NAME" || log_error "Failed to show app report"
-            # Check if the app is running
-            if ! docker ps --filter "name=$APPLICATION_NAME" --format "{{.Names}}" | grep -q "$APPLICATION_NAME"; then
-                log_error "App is not running"
-            else
-                log_success "App $APPLICATION_NAME is running"
-                docker ps --filter "name=$APPLICATION_NAME"
-            fi
-            # Deployment status
-            echo -e "\n---------------------------------------\n$APPLICATION_NAME Deployment is Successful\n---------------------------------------"
-        }
-        
-        log_info "Deployment run started"
-        
-        # Capture Deployment output to check if changes are detected or not
-        DEPLOY_OUTPUT=$(dokku git:from-image "$APPLICATION_NAME" "$IMAGE_NAME" 2>&1)
-
-        # Check for specific error message indicating image is the same
-        if echo "$DEPLOY_OUTPUT" | grep -q "No changes detected, skipping git commit"; then
-            log_warn "No changes detected. Rebuilding the app..."
-            dokku ps:rebuild "$APPLICATION_NAME" || log_error "Failed to rebuild $APPLICATION_NAME"
-            log_success "App Rebuilt successfully"
-        else
-            # Deploy using the latest image
-            log_info "Deployment using the latest image"
-            dokku git:from-image "$APPLICATION_NAME" "$IMAGE_NAME"
-        fi
-
-        # Show app info
-        show_app_info
-    }
-
-    # Call the deployment setup function
-    app_deploy_setup
-}
-
 # Function to apply a custom certificate
-enable_ssl() {
-
+function enable_ssl {
     use_custom_certificate() {
         if [ -n "$CUSTOM_CERT_FILE" ]; then
             if [ -f "$CUSTOM_CERT_FILE" ]; then
@@ -305,6 +260,51 @@ enable_ssl() {
         log_warn "Domain variable EMPTY. You can set the domain for the application manually using: ${yellow}dokku domains:set <APPLICATION_NAME> <APPLICATION_DOMAIN_NAME>${reset}"
     fi
 }
+
+# Function to deploy the app
+function deploy_app {
+    # Function to handle app deployment
+    app_deploy_setup() {   
+
+        # Function to show app info
+        show_app_info() {
+            # Show report for the app
+            dokku ps:report "$APPLICATION_NAME" || log_error "Failed to show app report"
+            # Check if the app is running
+            if ! docker ps --filter "name=$APPLICATION_NAME" --format "{{.Names}}" | grep -q "$APPLICATION_NAME"; then
+                log_error "App is not running"
+            else
+                log_success "App $APPLICATION_NAME is running"
+                docker ps --filter "name=$APPLICATION_NAME"
+            fi
+            # Deployment status
+            echo -e "\n---------------------------------------\n$APPLICATION_NAME Deployment is Successful\n---------------------------------------"
+        }
+        
+        log_info "Deployment run started"
+        
+        # Capture Deployment output to check if changes are detected or not
+        DEPLOY_OUTPUT=$(dokku git:from-image "$APPLICATION_NAME" "$IMAGE_NAME" 2>&1)
+
+        # Check for specific error message indicating image is the same
+        if echo "$DEPLOY_OUTPUT" | grep -q "No changes detected, skipping git commit"; then
+            log_warn "No changes detected. Rebuilding the app..."
+            dokku ps:rebuild "$APPLICATION_NAME" || log_error "Failed to rebuild $APPLICATION_NAME"
+            log_success "App Rebuilt successfully"
+        else
+            # Deploy using the latest image
+            log_info "Deployment using the latest image"
+            dokku git:from-image "$APPLICATION_NAME" "$IMAGE_NAME"
+            enable_ssl
+        fi
+
+        # Show app info
+        show_app_info
+    }
+
+    # Call the deployment setup function
+    app_deploy_setup
+}
     
 # Main function to deploy app
 dokku_app_deploy(){
@@ -312,7 +312,6 @@ dokku_app_deploy(){
   add_ssh_key
   check_app_exists
   deploy_app
-  enable_ssl
   cleanup_docker
 
 }
