@@ -200,7 +200,8 @@ function check_app_exists {
     # Function to check if Let's Encrypt plugin is installed
     check_letsencrypt_installed() {
         if ! dokku plugin:list | grep -iq "letsencrypt"; then
-            log_info "Let's Encrypt plugin not found. Installing..."
+            log_warn "Let's Encrypt plugin NOT FOUND!"
+            log_info "Installing..."
             if dokku plugin:install https://github.com/dokku/dokku-letsencrypt.git; then
                 log_success "Let's Encrypt plugin installed successfully."
             else
