@@ -308,13 +308,11 @@ function deploy_app {
             log_success "App Rebuilt successfully"
             show_app_info
             exit 0
-        elif [[ $? -eq 0 ]]; then
+        else
             check_exit_status "App Build complete" "Failed to deploy $APPLICATION_NAME"
             log_info "Enabling SSL Certificate..."
             enable_ssl
             show_app_info
-        else
-            check_exit_status "" ""
         fi
 
     }
