@@ -211,6 +211,23 @@ function check_app_exists {
 function deploy_app {
     # Function to handle app deployment
     app_deploy_setup() {   
+
+        # Function to show app info
+        show_app_info() {
+        # Show report for the app
+        dokku ps:report "$APPLICATION_NAME" || log_error "Failed to show app report"
+        # Check if the app is running
+        if ! docker ps --filter "name=$APPLICATION_NAME" --format "{{.Names}}" | grep -q "$APPLICATION_NAME"; then
+            log_error "App is not running"
+        else
+            log_success "App $APPLICATION_NAME is running"
+            docker ps --filter "name=$APPLICATION_NAME"
+        fi
+        # Deployment status
+        echo -e "\n---------------------------------------\n$APPLICATION_NAME Deployment is Successful\n---------------------------------------"
+
+        }
+        
         log_info "Deployment run started"
         # Deploy using the latest image and capture output
         DEPLOY_OUTPUT=$(dokku git:from-image "$APPLICATION_NAME" "$IMAGE_NAME" 2>&1)
@@ -219,24 +236,15 @@ function deploy_app {
         if echo "$DEPLOY_OUTPUT" | grep -q "No changes detected, skipping git commit"; then
             log_warn "No changes detected. Rebuilding the app..."
             dokku ps:rebuild "$APPLICATION_NAME" || log_error "Failed to rebuild $APPLICATION_NAME"
+            log_success "App Rebuilt successfully"
+            show_app_info
             exit 0
         else
             log_error "Failed to deploy $APPLICATION_NAME: $DEPLOY_OUTPUT"
         fi
 
-        # Show report for the app
-        dokku ps:report "$APPLICATION_NAME" || log_error "Failed to show app report"
-
-        # Check if the app is running
-        if ! docker ps --filter "name=$APPLICATION_NAME" --format "{{.Names}}" | grep -q "$APPLICATION_NAME"; then
-            log_error "App is not running"
-        else
-            log_success "App $APPLICATION_NAME is running"
-            docker ps --filter "name=$APPLICATION_NAME"
-        fi
-
-        # Deployment status
-        echo -e "\n---------------------------------------\n$APPLICATION_NAME Deployment is Successful\n---------------------------------------"
+        # Show application information after deployment
+        show_app_info
     }
 
     # Function to apply a custom certificate
