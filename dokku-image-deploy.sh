@@ -229,7 +229,7 @@ dokku_app_deploy(){
 run dokku_app_deploy
 
 if [[ "${status}" == "0" ]]; then
-  success "Success!"
+  log_success "Deployment run finished"
 else
-  fail "Error!"
+  log_error "Failed to complete deployment run"
 fi
