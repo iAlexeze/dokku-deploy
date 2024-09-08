@@ -203,7 +203,12 @@ function check_app_exists {
         create_app
         set_app_domain
     else
-        echo -e "\n--------------------------\nApplication - [$APPLICATION_NAME] already exists.\nProceeding to build...\n--------------------------"
+        echo -e "\n
+        --------------------------
+        \nApplication - [$APPLICATION_NAME] already exists.
+        \nProceeding to build...
+        \n--------------------------
+        "
     fi
 }
 
@@ -278,13 +283,17 @@ function deploy_app {
                 docker ps --filter "name=$APPLICATION_NAME"
             fi
             # Deployment status
-            echo -e "\n---------------------------------------\n$APPLICATION_NAME Deployment is Successful\n---------------------------------------"
+            echo -e "\n
+            ---------------------------------------
+            \n$APPLICATION_NAME Deployment is Successful
+            \n---------------------------------------
+            "
         }
         
         log_info "Deployment run started"
         
         # Deploy using the latest image and Capture Deployment output 
-        DEPLOY_OUTPUT=$(dokku git:from-image "$APPLICATION_NAME" "$IMAGE_NAME")
+        DEPLOY_OUTPUT=$(dokku git:from-image "$APPLICATION_NAME" "$IMAGE_NAME" 2>&1)
 
         # Check for specific error message indicating image is the same
         if echo "$DEPLOY_OUTPUT" | grep -q "No changes detected, skipping git commit"; then
