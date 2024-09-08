@@ -282,7 +282,7 @@ function deploy_app {
         }
         
         log_info "Deployment run started"
-        
+
         # Create a named pipe to capture output
         pipe=$(mktemp -u)
         mkfifo "$pipe"
@@ -316,9 +316,6 @@ function deploy_app {
         # Clean up named pipe
         rm -f "$pipe"
     }
-
-    }
-
     # Call the deployment setup function
     app_deploy_setup
 }
