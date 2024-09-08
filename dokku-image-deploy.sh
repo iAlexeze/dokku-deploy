@@ -22,7 +22,7 @@
 set -e
 set -o pipefail
 
-
+# Colors
 gray="\\e[37m"
 blue="\\e[36m"
 red="\\e[31m"
@@ -39,32 +39,8 @@ reset="\\e[0m"
 # Returns:
 #   None
 #######################################
-info() { echo -e "${blue}INFO: $*${reset}"; }
-
-#######################################
-# echoes a message in red
-# Globals:
-#   None
-# Arguments:
-#   Message
-# Returns:
-#   None
-#######################################
-error() { echo -e "${red}ERROR: $*${reset}"; }
-
-#######################################
-# echoes a message in grey. Only if debug mode is enabled
-# Globals:
-#   DEBUG
-# Arguments:
-#   Message
-# Returns:
-#   None
-#######################################
-debug() {
-  if [[ "${DEBUG}" == "true" ]]; then
-    echo -e "${gray}DEBUG: $*${reset}";
-  fi
+log_info() {
+    echo -e "$(date '+%Y-%m-%d %H:%M:%S') ${blue}INFO: ${reset} $1"
 }
 
 #######################################
@@ -76,7 +52,9 @@ debug() {
 # Returns:
 #   None
 #######################################
-warning() { echo -e "${yellow}✔ $*${reset}"; }
+log_warn() {
+    echo -e "$(date '+%Y-%m-%d %H:%M:%S') ${yellow}WARN: ${reset} $1"
+}
 
 #######################################
 # echoes a message in green
@@ -87,10 +65,12 @@ warning() { echo -e "${yellow}✔ $*${reset}"; }
 # Returns:
 #   None
 #######################################
-success() { echo -e "${green}✔ $*${reset}"; }
+log_success() {
+    echo -e "$(date '+%Y-%m-%d %H:%M:%S') ${green}SUCCESS: ✔${reset} $1"
+}
 
 #######################################
-# echoes a message in red and terminates the programm
+# echoes a message in red
 # Globals:
 #   None
 # Arguments:
@@ -98,9 +78,24 @@ success() { echo -e "${green}✔ $*${reset}"; }
 # Returns:
 #   None
 #######################################
-fail() { echo -e "${red}✖ $*${reset}"; exit 1; }
+# Set Program Name
+PROGNAME=$(basename "$0")
 
-## Enable debug mode.
+# Custom error handling function
+log_error() {
+    echo -e "$(date '+%Y-%m-%d %H:%M:%S') ${red}ERROR ✖${reset} ${PROGNAME}: ${1:-"Unknown Error"}" 1>&2
+    exit 1
+}
+
+#######################################
+# echoes a message in grey. Only if debug mode is enabled
+# Globals:
+#   DEBUG
+# Arguments:
+#   Message
+# Returns:
+#   None
+#######################################
 enable_debug() {
   if [[ "${DEBUG}" == "true" ]]; then
     info "Enabling debug mode."
@@ -128,61 +123,9 @@ run() {
   set -e
 }
 
-#######################################
-# Initialize array variable with the specified name
-# https://confluence.atlassian.com/bitbucket/advanced-techniques-for-writing-pipes-969511009.html
-# Arguments:
-#   array_var: the name of the variable
-# Returns:
-#   None
-#######################################
-init_array_var() {
-  local array_var=${1}
-  local count_var=${array_var}_COUNT
-  for (( i = 0; i < ${!count_var:=0}; i++ ))
-  do
-    eval "${array_var}"[$i]='$'"${array_var}"_${i}
-  done
-}
+DEPLOY_SCRIPT="./dokku_deploy.sh"
 
-#######################################
-# Check if a newer version is available and show a warning message
-# Globals:
-#   None
-# Arguments:
-#   None
-# Returns:
-#   Message
-#######################################
-check_for_newer_version() {
-  set +e
-  if [[ -f "/pipe.yml" ]]; then
-    local pipe_name
-    local pipe_repository
-    local pipe_current_version
-    local pipe_latest_version
-    local wget_debug_level="--quiet"
-
-    pipe_name=$(awk -F ": " '$1=="name" {print $NF;exit;}' /pipe.yml)
-    pipe_repository=$(awk '/repository/ {print $NF}' /pipe.yml)
-    pipe_current_version=$(awk -F ":" '/image/ {print $NF}' /pipe.yml)
-
-    if [[ "${DEBUG}" == "true" ]]; then
-      warning "Starting check for the new version of the pipe..."
-      wget_debug_level="--verbose"
-    fi
-    pipe_latest_version=$(wget "${wget_debug_level}" -O - "${pipe_repository}"/raw/master/pipe.yml | awk -F ":" '/image/ {print $NF}')      
-
-    if [[ "${pipe_current_version}" != "${pipe_latest_version}" ]]; then
-      warning "New version available: ${pipe_name} ${pipe_current_version} to ${pipe_latest_version}"
-    fi
-  fi
-  set -e
-}
-
-# End standard 'imports'
-
-info "Executing Deployment...."
+log_info "Executing Deployment...."
 
 enable_debug
 
@@ -193,32 +136,36 @@ IMAGE_NAME="$IMAGE_TAG"
 
 # Internal Variables
 SSH_ACCESS_KEY="${SSH_DIR}/${BITBUCKET_CLONE_KEY_NAME}"
-PROJ_DIR="${DEPLOYMENT_DIR}/${PROJECT_DIRECTORY_NAME}"
-
-# Set Program Name
-PROGNAME=$(basename "$0")
-
-# Custom error handling function
-function error_exit {
-    echo -e "${PROGNAME}: ${1:-"Unknown Error"}" 1>&2
-    exit 1
-}
+APPLICATION_DOMAIN_NAME="${DOMAIN_NAME}"
 
 # Function to add SSH key
 function add_ssh_key {
     if ! ssh-add -l > /dev/null 2>&1; then
         echo "Starting ssh-agent..."
-        eval "$(ssh-agent -s)" > /dev/null 2>&1 || error_exit "Failed to start ssh-agent"
+        eval "$(ssh-agent -s)" > /dev/null 2>&1 || log_error "Failed to start ssh-agent"
     else
         echo "ssh-agent is already running."
     fi
 
-    ssh-add "$SSH_ACCESS_KEY" > /dev/null 2>&1 || error_exit "Failed to add SSH key.  \nEnter a BITBUCKET_CLONE_KEY_NAME already added to your bitbucket profile and also located at ~/.ssh in the server"
+    ssh-add "$SSH_ACCESS_KEY" > /dev/null 2>&1 || log_error "Failed to add SSH key.  \nEnter a BITBUCKET_CLONE_KEY_NAME already added to your bitbucket profile and also located at ~/.ssh in the server"
+}
+
+# Function to add SSH key
+function add_ssh_key {
+    # Add SSH-Key to ssh-agent
+    if ! ssh-add -l > /dev/null 2>&1; then
+        log_info "Starting ssh-agent..."
+        eval "$(ssh-agent -s)" > /dev/null 2>&1 || log_error "Failed to start ssh-agent"
+    else
+        log_info "ssh-agent is already running."
+    fi
+
+    ssh-add "$SSH_ACCESS_KEY" > /dev/null 2>&1 || log_error "Failed to add SSH key.  \nEnter a BITBUCKET_CLONE_KEY_NAME already added to your bitbucket profile and also located at ~/.ssh in the server"
 }
 
 # Function to clean up unused images and resources
 function cleanup_docker {
-    echo "Cleaning up unused images and resources..."
+    log_warn "Cleaning up unused images and resources..."
     docker system prune -af > /dev/null 2>&1 &
 
     local prune_pid=$!
@@ -226,29 +173,41 @@ function cleanup_docker {
         echo -n "."
         sleep 1
     done
-    echo -e "\nDone!"
+    echo
+    log_success "Cleanup Completed"
 }
 
 # Function to check if the app exists
 function check_app_exists {
     if ! dokku apps:list | grep -iq "$APPLICATION_NAME"; then
-        error_exit "$APPLICATION_NAME NOT FOUND"
+        log_warn "$APPLICATION_NAME NOT FOUND!"
+        log_info "Creating $APPLICATION_NAME..."
+        dokku apps:create "$APPLICATION_NAME" || log_error "Failed to create application $APPLICATION_NAME"
+        log_success "$APPLICATION_NAME created"
+
+        # Check if APPLICATION_DOMAIN_NAME is set
+        if [ -n "$APPLICATION_DOMAIN_NAME" ]; then
+            dokku domains:set "$APPLICATION_NAME" "$APPLICATION_DOMAIN_NAME" || log_error "Failed to add domain - [$APPLICATION_DOMAIN_NAME] to application [$APPLICATION_NAME]"
+            log_success "$APPLICATION_DOMAIN_NAME set to $APPLICATION_NAME"
+        else
+            log_warn "Domain variable EMPTY. You can set the domain for the application manually using: ${yellow}dokku domains:set $APPLICATION_NAME $APPLICATION_DOMAIN_NAME${reset}"
+        fi
     else
-        echo -e "--------------------------\nApplication - [$APPLICATION_NAME] already exists.\nProceeding to build...\n--------------------------"
+        echo -e "\n--------------------------\nApplication - [$APPLICATION_NAME] already exists.\nProceeding to build...\n--------------------------"
     fi
 }
 
 # Function to deploy the app
 function deploy_app {
     # Deploy using the latest image
-    dokku git:from-image "$APPLICATION_NAME" "$IMAGE_NAME" || error_exit "Failed to deploy $APPLICATION_NAME"
+    dokku git:from-image "$APPLICATION_NAME" "$IMAGE_NAME" || log_error "Failed to deploy $APPLICATION_NAME"
 
     # Show report for the app
-    dokku ps:report "$APPLICATION_NAME" || error_exit "Failed to show app report"
+    dokku ps:report "$APPLICATION_NAME" || log_error "Failed to show app report"
 
     # Check if app is running
     if ! docker ps --filter "name=$APPLICATION_NAME" --format "{{.Names}}" | grep -q "$APPLICATION_NAME"; then
-        error_exit "App is not running"
+        log_error "App is not running"
     else
         echo "App $APPLICATION_NAME" is running
         docker ps --filter "name=$APPLICATION_NAME"
@@ -274,4 +233,3 @@ if [[ "${status}" == "0" ]]; then
 else
   fail "Error!"
 fi
-
