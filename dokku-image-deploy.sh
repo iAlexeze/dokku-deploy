@@ -241,16 +241,33 @@ function deploy_app {
         echo -e "\n---------------------------------------\n$APPLICATION_NAME Deployment is Successful\n---------------------------------------"
     }
 
-    # Function to enable SSL certificate using Let's Encrypt
-    enable_ssl() {
-        if [ -n "$APPLICATION_DOMAIN_NAME" ]; then
-            log_info "Setting Up Let's Encrypt SSL Certificate for $APPLICATION_DOMAIN_NAME..."
-            if dokku letsencrypt:enable "$APPLICATION_NAME" "$APPLICATION_DOMAIN_NAME"; then
-                log_success "SSL Certificate obtained successfully for $APPLICATION_DOMAIN_NAME"
+    # Function to apply a custom certificate
+    use_custom_certificate() {
+        if [ -n "$CUSTOM_CERT_FILE" ]; then
+            if [ -f "$CUSTOM_CERT_FILE" ]; then
+                log_info "Applying ${yellow}custom certificate${reset} to $APPLICATION_DOMAIN_NAME..."
+                if dokku certs:add "$APPLICATION_NAME" < "$CUSTOM_CERT_FILE"; then
+                    log_success "Custom certificate applied successfully!"
+                else
+                    log_warn "${red}Error adding custom certificate.${reset}"
+                    log_info "Apply manually by running: ${yellow}dokku certs:add <APPLICATION_NAME> <CUSTOM_CERT_FILE>${reset}"
+                    log_info "${yellow}Custom certificate file${reset} should contain 'server.crt' and 'server.key'"
+                fi
             else
-                log_warn "Failed to add Let's Encrypt to $APPLICATION_NAME"
-                log_warn "You can set the domain for the application manually using: ${yellow}dokku domains:set <APPLICATION_NAME> <APPLICATION_DOMAIN_NAME> ${reset}"
+                log_warn "${red}Custom certificate file not found: ${CUSTOM_CERT_FILE}${reset}"
+                log_info "Please ensure the file exists and is accessible."
             fi
+        fi
+    }
+
+    # Function to enable Let's Encrypt certificate
+    use_letsencrypt_certificate() {
+        log_info "Setting up Let's Encrypt SSL Certificate for $APPLICATION_DOMAIN_NAME..."
+        if dokku letsencrypt:enable "$APPLICATION_NAME" "$APPLICATION_DOMAIN_NAME"; then
+            log_success "SSL Certificate obtained successfully for $APPLICATION_DOMAIN_NAME"
+        else
+            log_warn "Failed to add Let's Encrypt to $APPLICATION_NAME"
+            log_warn "You can set the domain for the application manually using: ${yellow}dokku domains:set <APPLICATION_NAME> <APPLICATION_DOMAIN_NAME>${reset}"
         fi
     }
 
@@ -262,15 +279,27 @@ function deploy_app {
             log_warn "sudo dokku plugin:install https://github.com/dokku/dokku-letsencrypt.git"
         else
             log_success "Let's Encrypt plugin already installed."
-            log_info "Enabling SSL Certificate for $APPLICATION_DOMAIN_NAME"
-            enable_ssl
+            use_letsencrypt_certificate
+        fi
+    }
+
+    # Function to handle SSL setup
+    enable_ssl() {
+        if [ -n "$APPLICATION_DOMAIN_NAME" ]; then
+            use_custom_certificate
+            if [ -z "$CUSTOM_CERT_FILE" ]; then
+                check_letsencrypt_installed
+            fi
+        else
+            log_warn "Domain variable EMPTY. You can set the domain for the application manually using: ${yellow}dokku domains:set <APPLICATION_NAME> <APPLICATION_DOMAIN_NAME>${reset}"
         fi
     }
 
     # Main function to deploy app
     app_deploy_setup
-    check_letsencrypt_installed
+    enable_ssl
 }
+
 
 dokku_app_deploy(){
 
