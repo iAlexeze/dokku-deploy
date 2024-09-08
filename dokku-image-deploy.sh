@@ -285,15 +285,17 @@ function deploy_app {
 
         # Run the deployment command, using tee to capture output
         log_info "Deploying using the latest image..."
+        DEPLOY_OUTPUT=$(dokku git:from-image "$APPLICATION_NAME" "$IMAGE_NAME" 2>&1)
 
         # Check for specific error message indicating image is the same
-        if dokku git:from-image "$APPLICATION_NAME" "$IMAGE_NAME" | grep -q "No changes detected, skipping git commit"; then
+        if echo "$DEPLOY_OUTPUT" | grep -q "No changes detected, skipping git commit"; then
             log_warn "No changes detected. Rebuilding the app..."
             dokku ps:rebuild "$APPLICATION_NAME" || log_error "Failed to rebuild $APPLICATION_NAME"
             log_success "App Rebuilt successfully"
             show_app_info
             exit 0
         else
+            echo "$DEPLOY_OUTPUT"
             log_info "Enabling SSL Certificate..."
             enable_ssl
             show_app_info
