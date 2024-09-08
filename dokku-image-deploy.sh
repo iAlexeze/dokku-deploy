@@ -233,10 +233,18 @@ function check_app_exists {
 
 # Function to deploy the app
 function deploy_app {
-    log_info "Deployment run started"
-    # Deploy using the latest image
-    dokku git:from-image "$APPLICATION_NAME" "$IMAGE_NAME" || log_error "Failed to deploy $APPLICATION_NAME"
+   log_info "Deployment run started"
 
+    # Deploy using the latest image and capture output
+    DEPLOY_OUTPUT=$(dokku git:from-image "$APPLICATION_NAME" "$IMAGE_NAME" 2>&1)
+
+    # Check for specific error message indicating image is the same
+    if echo "$DEPLOY_OUTPUT" | grep -q "No changes detected, skipping git commit"; then
+        log_warn "No changes detected. Rebuilding the app..."
+        dokku ps:rebuild "$APPLICATION_NAME" || log_error "Failed to rebuild $APPLICATION_NAME"
+    else
+        log_error "Failed to deploy $APPLICATION_NAME: $DEPLOY_OUTPUT"
+    fi
     # Show report for the app
     dokku ps:report "$APPLICATION_NAME" || log_error "Failed to show app report"
 
