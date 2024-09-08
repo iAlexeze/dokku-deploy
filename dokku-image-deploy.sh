@@ -203,8 +203,7 @@ function check_app_exists {
         create_app
         set_app_domain
     else
-        echo -e "\n
-        --------------------------\nApplication - [$APPLICATION_NAME] already exists.\nProceeding to build...\n--------------------------"
+        echo -e "--------------------------\nApplication - [$APPLICATION_NAME] already exists.\nProceeding to build...\n--------------------------"
     fi
 }
 
