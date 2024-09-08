@@ -285,7 +285,7 @@ function deploy_app {
 
         # Run the deployment command, using tee to capture output
         log_info "Deploying using the latest image..."
-        DEPLOY_OUTPUT=$(dokku git:from-image "$APPLICATION_NAME" "$IMAGE_NAME" 2>&1 | tee /dev/tty)
+        DEPLOY_OUTPUT=$(dokku git:from-image "$APPLICATION_NAME" "$IMAGE_NAME" 2>&1 | tee /dev/tty || log_error "Failed to deploy $APPLICATION_NAME")
 
         # Check for specific error message indicating image is the same
         if echo "$DEPLOY_OUTPUT" | grep -q "No changes detected, skipping git commit"; then
@@ -295,7 +295,6 @@ function deploy_app {
             show_app_info
             exit 0
         else
-            echo "$DEPLOY_OUTPUT"
             log_info "Enabling SSL Certificate..."
             enable_ssl
             show_app_info
