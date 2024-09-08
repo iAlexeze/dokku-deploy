@@ -190,7 +190,7 @@ function check_app_exists {
             dokku domains:set "$APPLICATION_NAME" "$APPLICATION_DOMAIN_NAME" || log_error "Failed to add domain - [$APPLICATION_DOMAIN_NAME] to application [$APPLICATION_NAME]"
             log_success "$APPLICATION_DOMAIN_NAME set to $APPLICATION_NAME"
         else
-            log_warn "Domain variable EMPTY. You can set the domain for the application manually using: ${yellow}dokku domains:set $APPLICATION_NAME $APPLICATION_DOMAIN_NAME${reset}"
+            log_warn "Domain variable EMPTY. You can set the domain for the application manually using: ${yellow}dokku domains:set \$APPLICATION_NAME \$APPLICATION_DOMAIN_NAME${reset}"
         fi
     else
         echo -e "\n--------------------------\nApplication - [$APPLICATION_NAME] already exists.\nProceeding to build...\n--------------------------"
