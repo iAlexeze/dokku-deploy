@@ -213,11 +213,10 @@ function check_app_exists {
             log_warn "Let's Encrypt plugin NOT FOUND!"
             log_warn "Install Let's Encrypt plugin by running:"
             log_warn "sudo dokku plugin:install https://github.com/dokku/dokku-letsencrypt.git"
-            else
-                log_success "Let's Encrypt plugin already installed."
-                log_info "Enabling SSL Certificate for APPLICATION_DOMAIN_NAME"
-                enable_ssl
-            fi
+        else
+            log_success "Let's Encrypt plugin already installed."
+            log_info "Enabling SSL Certificate for APPLICATION_DOMAIN_NAME"
+            enable_ssl
         fi
     }
 
