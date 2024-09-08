@@ -280,6 +280,20 @@ function deploy_app {
             # Deployment status
             echo -e "\n---------------------------------------\n$APPLICATION_NAME Deployment is Successful\n---------------------------------------"
         }
+
+        # Function to check exit status
+        check_exit_status() {
+            local success=$1
+            local fail=$2
+
+            if [ $? -eq 0 ]; then
+                log_success "$success"
+            else
+                log_error "$fail"
+                exit 1
+            fi
+        }
+
         
         log_info "Deployment run started"
 
@@ -295,11 +309,12 @@ function deploy_app {
             show_app_info
             exit 0
         elif [[ $? -eq 0 ]]; then
+            check_exit_status "App Build complete" "Failed to deploy $APPLICATION_NAME"
             log_info "Enabling SSL Certificate..."
             enable_ssl
             show_app_info
         else
-            log_error "Failed to deploy $APPLICATION_NAME"
+            check_exit_status "" ""
         fi
 
     }
