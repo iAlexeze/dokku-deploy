@@ -197,20 +197,6 @@ function check_app_exists {
         fi
     }
 
-    # Function to check if Let's Encrypt plugin is installed
-    check_letsencrypt_installed() {
-        if ! dokku plugin:list | grep -iq "letsencrypt"; then
-            log_warn "Let's Encrypt plugin NOT FOUND!"
-            log_info "Installing..."
-            if dokku plugin:install https://github.com/dokku/dokku-letsencrypt.git; then
-                log_success "Let's Encrypt plugin installed successfully."
-            else
-                log_warn "Failed to install Let's Encrypt plugin"
-                log_warn "Install Let's Encrypt plugin here - https://github.com/dokku/dokku-letsencrypt"
-            fi
-        fi
-    }
-
     # Function to enable SSL certificate using Let's Encrypt
     enable_ssl() {
         if dokku letsencrypt:enable "$APPLICATION_NAME" "$APPLICATION_DOMAIN_NAME"; then
@@ -221,13 +207,27 @@ function check_app_exists {
         fi
     }
 
+    # Function to check if Let's Encrypt plugin is installed
+    check_letsencrypt_installed() {
+        if ! dokku plugin:list | grep -iq "letsencrypt"; then
+            log_warn "Let's Encrypt plugin NOT FOUND!"
+            log_warn "Install Let's Encrypt plugin by running:"
+            log_warn "sudo dokku plugin:install https://github.com/dokku/dokku-letsencrypt.git"
+            else
+                log_success "Let's Encrypt plugin already installed."
+                log_info "Enabling SSL Certificate for APPLICATION_DOMAIN_NAME"
+                enable_ssl
+            fi
+        fi
+    }
+
+
     # Main logic to check if the app exists
     if ! dokku apps:list | grep -iq "$APPLICATION_NAME"; then
         log_warn "$APPLICATION_NAME application NOT FOUND!"
         create_app
         set_app_domain
         check_letsencrypt_installed
-        enable_ssl
     else
         echo -e "\n--------------------------\nApplication - [$APPLICATION_NAME] already exists.\nProceeding to build...\n--------------------------"
     fi
