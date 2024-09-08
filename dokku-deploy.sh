@@ -171,20 +171,53 @@ function cleanup_docker {
 
 # Function to check if the app exists
 function check_app_exists {
-    if ! dokku apps:list | grep -iq "$APPLICATION_NAME"; then
-        log_warn "$APPLICATION_NAME application NOT FOUND!"
+
+    # Function to create a new Dokku application
+    create_app() {
         log_info "Creating $APPLICATION_NAME..."
         dokku apps:create "$APPLICATION_NAME" || log_error "Failed to create application $APPLICATION_NAME"
         log_success "$APPLICATION_NAME created"
+    }
 
-        # Check if APPLICATION_DOMAIN_NAME is set
+    # Function to set domain for the application
+    set_app_domain() {
         if [ -n "$APPLICATION_DOMAIN_NAME" ]; then
             dokku domains:set "$APPLICATION_NAME" "$APPLICATION_DOMAIN_NAME" || log_error "Failed to add domain - [$APPLICATION_DOMAIN_NAME] to application [$APPLICATION_NAME]"
             log_success "$APPLICATION_DOMAIN_NAME set to $APPLICATION_NAME"
         else
-            log_warn "Domain variable EMPTY."
-            log_warn "You can set the domain for the application manually using: ${yellow}dokku domains:set $APPLICATION_NAME $APPLICATION_DOMAIN_NAME${reset}"
+            log_warn "Domain variable EMPTY. You can set the domain for the application manually using: ${yellow}dokku domains:set <APPLICATION_NAME> <APPLICATION_DOMAIN_NAME> ${reset}"
         fi
+    }
+
+    # Function to enable SSL certificate using Let's Encrypt
+    enable_ssl() {
+        if dokku letsencrypt:enable "$APPLICATION_NAME" "$APPLICATION_DOMAIN_NAME"; then
+            log_success "SSL Certificate obtained successfully for $APPLICATION_DOMAIN_NAME"
+        else
+            log_warn "Failed to add Let's Encrypt to $APPLICATION_NAME"
+            log_warn "You can set the domain for the application manually using: ${yellow}dokku domains:set <APPLICATION_NAME> <APPLICATION_DOMAIN_NAME> ${reset}"
+        fi
+    }
+
+    # Function to check if Let's Encrypt plugin is installed
+    check_letsencrypt_installed() {
+        if ! dokku plugin:list | grep -i "letsencrypt"; then
+            log_warn "Let's Encrypt plugin NOT FOUND!"
+            log_warn "Install Let's Encrypt plugin by running:"
+            log_warn "sudo dokku plugin:install https://github.com/dokku/dokku-letsencrypt.git"
+        else
+            log_success "Let's Encrypt plugin already installed."
+            log_info "Enabling SSL Certificate for $APPLICATION_DOMAIN_NAME"
+            enable_ssl
+        fi
+    }
+
+    # Main logic to check if the app exists
+    if ! dokku apps:list | grep -iq "$APPLICATION_NAME"; then
+        log_warn "$APPLICATION_NAME application NOT FOUND!"
+        create_app
+        set_app_domain
+        check_letsencrypt_installed
     else
         echo -e "\n--------------------------\nApplication - [$APPLICATION_NAME] already exists.\nProceeding to build...\n--------------------------"
     fi
@@ -194,6 +227,8 @@ function check_app_exists {
 function deploy_app {
     # Function to check if the app is ready to deploy
     ready_to_deploy() {
+        log_info "Deployment run started"
+
         # Change to the project directory
         cd "$PROJ_DIR" || log_error "Failed to change directory to $PROJ_DIR"
 
