@@ -204,11 +204,7 @@ function check_app_exists {
         set_app_domain
     else
         echo -e "\n
-        --------------------------
-        \nApplication - [$APPLICATION_NAME] already exists.
-        \nProceeding to build...
-        \n--------------------------
-        "
+        --------------------------\nApplication - [$APPLICATION_NAME] already exists.\nProceeding to build...\n--------------------------"
     fi
 }
 
@@ -283,11 +279,7 @@ function deploy_app {
                 docker ps --filter "name=$APPLICATION_NAME"
             fi
             # Deployment status
-            echo -e "\n
-            ---------------------------------------
-            \n$APPLICATION_NAME Deployment is Successful
-            \n---------------------------------------
-            "
+            echo -e "\n---------------------------------------\n$APPLICATION_NAME Deployment is Successful\n---------------------------------------"
         }
         
         log_info "Deployment run started"
