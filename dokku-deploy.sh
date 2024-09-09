@@ -295,14 +295,20 @@ function deploy_app {
     check_deployment_dir() { 
         if [[ -d $DEPLOYMENT_DIR ]]; then
             cd $DEPLOYMENT_DIR || log_error "Failed to change directory to $DEPLOYMENT_DIR"
-            if [[ ! -d $PROJ_DIR ]]; then          
+            if [[ ! -d $PROJ_DIR || ! -d $DEPLOYMENT_DIR/$PROJECT_DIRECTORY_NAME ]]; then          
                 log_warn "Project Directory $PROJ_DIR NOT FOUND!"
                 log_info "Creating Project Directory..."
                 git clone -b $BRANCH $REPO_URL || log_error "Failed to clone $PROJECT_DIRECTORY_NAME to $PROJ_DIR"
                 log_success "$APPLICATION_NAME Project Directory created"
                 ready_to_deploy
+                
+                # If project directory name exists, proceed to deploy
+            elif [[ -d $DEPLOYMENT_DIR/$PROJECT_DIRECTORY_NAME ]]; then
+                # Convert PROJ_DIR variable to $DEPLOYMENT_DIR/$PROJECT_DIRECTORY_NAME
+                PROJ_DIR="$DEPLOYMENT_DIR/$PROJECT_DIRECTORY_NAME"
+                ready_to_deploy
             else
-                # If project directory exists, proceed to deploy
+                # If project deployment directory exists, proceed to deploy
                 ready_to_deploy
             fi
         else
@@ -317,6 +323,7 @@ function deploy_app {
     check_deployment_dir
     enable_ssl
 }
+
 
 dokku_app_deploy(){
 
