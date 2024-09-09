@@ -300,13 +300,7 @@ function deploy_app {
                 log_info "Creating Project Directory..."
                 git clone -b $BRANCH $REPO_URL || log_error "Failed to clone $PROJECT_DIRECTORY_NAME to $PROJ_DIR"
                 log_success "$APPLICATION_NAME Project Directory created"
-                ready_to_deploy
-                
-                # If project directory name exists, proceed to deploy
-            elif [[ -d $DEPLOYMENT_DIR/$PROJECT_DIRECTORY_NAME ]]; then
-                # Convert PROJ_DIR variable to $DEPLOYMENT_DIR/$PROJECT_DIRECTORY_NAME
-                PROJ_DIR="$DEPLOYMENT_DIR/$PROJECT_DIRECTORY_NAME"
-                ready_to_deploy
+                ready_to_deploy                
             else
                 # If project deployment directory exists, proceed to deploy
                 ready_to_deploy
