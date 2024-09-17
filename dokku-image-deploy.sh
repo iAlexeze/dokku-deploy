@@ -1,3 +1,4 @@
+
 #!/usr/bin/env bash
 #
 # Run a command or script on your server
@@ -165,7 +166,7 @@ function add_ssh_key {
 
 # Function to clean up unused images and resources
 function cleanup_docker {
-    log_warn "Cleaning up unused images and resources..."
+    log_info "Cleaning up unused images and resources..."
     docker system prune -af > /dev/null 2>&1 &
 
     local prune_pid=$!
@@ -256,8 +257,6 @@ function enable_ssl {
         if [ -z "$CUSTOM_CERT_FILE" ]; then
             check_letsencrypt_installed
         fi
-    else
-        log_warn "Domain variable EMPTY. You can set the domain for the application manually using: ${yellow}dokku domains:set <APPLICATION_NAME> <APPLICATION_DOMAIN_NAME>${reset}"
     fi
 }
 
