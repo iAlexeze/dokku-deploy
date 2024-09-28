@@ -276,18 +276,10 @@ function show_app_report() {
 }
 # Function to deploy the app to production environment
 function deploy_app_master() {
-
-        DOCKER_USERNAME=${DOCKER_USERNAME:="interswitchhealthtech"}
-        DOCKER_PASSWORD=${DOCKER_PASSWORD:="EclatSmarthealth77%%"}
+        
         APP_VERSION=${APP_VERSION:="1.0"}
         BUILD_TAG="${APP_VERSION}.${BITBUCKET_BUILD_NUMBER}"
         IMAGE_NAME="${DOCKER_USERNAME}/${APPLICATION_NAME}:${BUILD_TAG}"
-
-        echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin >> /dev/null 2>&1
-        docker build -t ${IMAGE_NAME} .
-        docker push ${IMAGE_NAME}
-        echo ${IMAGE_NAME} > image_tag.txt
-        echo ${BUILD_TAG} > build_tag.txt
 
         # Deploy using the latest image
         dokku git:from-image "$APPLICATION_NAME" "$IMAGE_NAME" || log_error "Failed to deploy $APPLICATION_NAME"
