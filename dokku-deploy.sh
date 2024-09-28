@@ -365,8 +365,13 @@ dokku_app_deploy(){
 
 # Special deployment to production
 if [[ "${BRANCH}" == "master" || "${BRANCH}" == "main" ]]; then
+        
+        log_info "Source Branch is -${green} master ${reset}"
+        log_info "Proceeding to Production Deployment..."
         run prod_app_deploy
 else
+        log_info "Source Branch is -${green} ${BRANCH} ${reset}"
+        log_info "Proceeding to ${BRANCH} Deployment..."
         run dokku_app_deploy
 fi
 
