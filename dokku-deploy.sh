@@ -302,7 +302,7 @@ function deploy_app_master() {
         build_master_image() {
                 log_info "Building Production Image..."
                 echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin >> /dev/null 2>&1
-                docker build -t ${IMAGE_NAME} -f ${DOCKERFILE} || log_error "Failed to build $APPLICATION_NAME image"
+                docker build -t ${IMAGE_NAME} -f ${DOCKERFILE} . || log_error "Failed to build $APPLICATION_NAME image"
                 docker push ${IMAGE_NAME} || log_error "Failed to push $APPLICATION_NAME image"
                 log_success "Production image [${green}${IMAGE_NAME}${reset}] built successfully!"
                 echo
@@ -324,7 +324,7 @@ function deploy_app {
         setup_deployment_env
 
         # Build Docker image
-        docker build -t "$IMAGE_NAME" -f ${DOCKERFILE} || log_error "Failed to build $APPLICATION_NAME image"
+        docker build -t "$IMAGE_NAME" -f ${DOCKERFILE} . || log_error "Failed to build $APPLICATION_NAME image"
 
         # Deploy using the latest image
         dokku git:from-image "$APPLICATION_NAME" "$IMAGE_NAME" || log_error "Failed to deploy $APPLICATION_NAME"
