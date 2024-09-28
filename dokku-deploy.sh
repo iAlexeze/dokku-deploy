@@ -133,8 +133,9 @@ enable_debug
 # Declare Variables
 SSH_DIR='/home/dokku/.ssh'
 DEPLOYMENT_DIR='/home/dokku/.deployments'
-DATE=$(date +%Y.%m.%d-%H:%M)
-IMAGE_NAME="$APPLICATION_NAME-v1.$DATE"
+APP_VERSION=${APP_VERSION:="1.0"}
+BUILD_TAG="${APP_VERSION}.${BITBUCKET_BUILD_NUMBER}"
+IMAGE_NAME="${DOCKER_USERNAME}/${APPLICATION_NAME}:${BUILD_TAG}"
 
 # Internal Variables
 SSH_ACCESS_KEY="${SSH_DIR}/${BITBUCKET_CLONE_KEY_NAME}"
@@ -294,7 +295,6 @@ function check_dockerfile_to_use() {
     # Function to build a Docker image using a specified Dockerfile or the default one.
     # Arguments:
     #   $1 - Environment name for the image
-
     local image_env=$1
 
     if [[ -n "${DOCKERFILE_TO_USE}" ]]; then
@@ -310,32 +310,50 @@ function check_dockerfile_to_use() {
     log_success "${image_env} image [${green}${IMAGE_NAME}${reset}] built successfully!"
 }
 
+# Function to deploy app with latest image
+function deploy_with_latest_image() {
+        DATE=$(date +%Y.%m.%d-%H:%M)
+        NEW_IMAGE_NAME="$APPLICATION_NAME-v1.$DATE"
+
+        log_info "Preparing image for deployment..."
+        log_info "Retagging Image for unique deployment run"
+        docker tag ${IMAGE_NAME} ${NEW_IMAGE_NAME} || log_error "Failed to retag ${IMAGE_NAME} to ${NEW_IMAGE_NAME}"
+
+        # Deploy using the latest image
+        log_info "Deploying using the latest image..."
+        dokku git:from-image "$APPLICATION_NAME" "$NEW_IMAGE_NAME" || log_error "Failed to deploy $APPLICATION_NAME"
+        show_app_report
+
+}
 
 # Function to deploy the app to production environment
 function deploy_app_master() {
-        # Decalre variables
+        
         DOCKER_USERNAME=${DOCKER_USERNAME:="interswitchhealthtech"}
         DOCKER_PASSWORD=${DOCKER_PASSWORD:="EclatSmarthealth77%%"}
-        APP_VERSION=${APP_VERSION:="1.0"}
-        BUILD_TAG="${APP_VERSION}.${BITBUCKET_BUILD_NUMBER}"
-        IMAGE_NAME="${DOCKER_USERNAME}/${APPLICATION_NAME}:${BUILD_TAG}"
 
-        build_master_image() {
-                log_info "Building Production Image..."
-                echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin >> /dev/null 2>&1
-                
-                # Check dockerfile to use
-                check_dockerfile_to_use "Production"
-                docker push ${IMAGE_NAME} || log_error "Failed to push $APPLICATION_NAME image"
-                log_success "Production image [${green}${IMAGE_NAME}${reset}] pushed successfully!"
-                echo
-                echo ${IMAGE_NAME} > image_tag.txt
-                echo ${BUILD_TAG} > build_tag.txt
-        }
+
+        log_info "Building Production Image..."
+
+        # Login to Image Repository
+        echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin >> /dev/null 2>&1
+        
+        # Setup deployment environment
         setup_deployment_env
-        build_master_image
-        dokku git:from-image "$APPLICATION_NAME" "$IMAGE_NAME" || log_error "Failed to deploy $APPLICATION_NAME"
-        show_app_report
+
+        # Check dockerfile to use
+        check_dockerfile_to_use "Production"
+        
+        # Deploy with latest image
+        deploy_with_latest_image
+
+        # Push image to repository if successful
+        docker push ${IMAGE_NAME} || log_error "Failed to push $APPLICATION_NAME image"
+        log_success "Production image [${green}${IMAGE_NAME}${reset}] pushed successfully!"
+
+        # Optionally export artifacts
+        echo ${IMAGE_NAME} > image_tag.txt
+        echo ${BUILD_TAG} > build_tag.txt
 }
 
 # Function to deploy the app to other environment
@@ -349,9 +367,8 @@ function deploy_app {
         # Check dockerfile to use
         check_dockerfile_to_use "${BRANCH}"
 
-        # Deploy using the latest image
-        dokku git:from-image "$APPLICATION_NAME" "$IMAGE_NAME" || log_error "Failed to deploy $APPLICATION_NAME"
-        show_app_report
+        # Deploy with latest image
+        deploy_with_latest_image
 
     }
 
