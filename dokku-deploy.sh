@@ -349,6 +349,7 @@ function deploy_app_master() {
         deploy_with_latest_image
 
         # Push image to repository if successful
+        log_info "Pushing Production Image to repository..."
         docker push ${IMAGE_NAME} || log_error "Failed to push $APPLICATION_NAME image"
         log_success "Production image [${green}${IMAGE_NAME}${reset}] pushed successfully!"
 
