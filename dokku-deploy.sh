@@ -274,23 +274,9 @@ function show_app_report() {
         echo -e "\n---------------------------------------\n$APPLICATION_NAME Deployment is Successful\n---------------------------------------"
 
 }
-# Function to deploy the app to production environment
-function deploy_app_master() {
-        
-        APP_VERSION=${APP_VERSION:="1.0"}
-        BUILD_TAG="${APP_VERSION}.${BITBUCKET_BUILD_NUMBER}"
-        IMAGE_NAME="${DOCKER_USERNAME}/${APPLICATION_NAME}:${BUILD_TAG}"
 
-        # Deploy using the latest image
-        dokku git:from-image "$APPLICATION_NAME" "$IMAGE_NAME" || log_error "Failed to deploy $APPLICATION_NAME"
-        show_app_report
-}
-
-# Function to deploy the app to other environment
-function deploy_app {
-
-    # Function to check if the app is ready to deploy
-    ready_to_deploy() {
+# Function to setup deployment environment
+function setup_deployment_env() {
         log_info "Deployment run started"
 
         # Change to the project directory
@@ -301,6 +287,38 @@ function deploy_app {
 
         # Switch to the deployment branch
         git switch $BRANCH || log_error "Failed to switch to deployment branch"
+}
+
+# Function to deploy the app to production environment
+function deploy_app_master() {
+        # Decalre variables
+        DOCKER_USERNAME=${DOCKER_USERNAME:="interswitchhealthtech"}
+        DOCKER_PASSWORD=${DOCKER_PASSWORD:="EclatSmarthealth77%%"}
+        APP_VERSION=${APP_VERSION:="1.0"}
+        BUILD_TAG="${APP_VERSION}.${BITBUCKET_BUILD_NUMBER}"
+        IMAGE_NAME="${DOCKER_USERNAME}/${APPLICATION_NAME}:${BUILD_TAG}"
+
+        build_master_image() {
+                log_info "Building Production Image..."
+                echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin >> /dev/null 2>&1
+                docker build -t ${IMAGE_NAME} . || log_error "Failed to build $APPLICATION_NAME image"
+                docker push ${IMAGE_NAME} . || log_error "Failed to push $APPLICATION_NAME image"
+                echo ${IMAGE_NAME} > image_tag.txt
+                echo ${BUILD_TAG} > build_tag.txt
+        }
+        setup_deployment_env
+        build_master_image
+        dokku git:from-image "$APPLICATION_NAME" "$IMAGE_NAME" || log_error "Failed to deploy $APPLICATION_NAME"
+        show_app_report
+}
+
+# Function to deploy the app to other environment
+function deploy_app {
+
+    # Function to check if the app is ready to deploy
+    ready_to_deploy() {
+        # Setup Deployment Environment
+        setup_deployment_env
 
         # Build Docker image
         docker build -t "$IMAGE_NAME" . || log_error "Failed to build $APPLICATION_NAME image"
@@ -338,35 +356,28 @@ function deploy_app {
     enable_ssl
 }
 
-prod_app_deploy(){
+function deployment() {
+        # Initial setup
+        add_ssh_key
+        check_app_exists
 
-  check_app_exists
-  deploy_app_master
-  cleanup_docker
+        # Deployment logic
+        if [[ "${BRANCH}" == "master" || "${BRANCH}" == "main" ]]; then
+                
+                log_info "Source Branch is -${green} master ${reset}"
+                log_info "Proceeding to Production Deployment..."
+                deploy_app_master
+        else
+                log_info "Source Branch is -${green} ${BRANCH} ${reset}"
+                log_info "Proceeding to ${BRANCH} Deployment..."
+                deploy_app
+        fi
 
+        # Clean up unused resources
+        cleanup_docker
 }
 
-dokku_app_deploy(){
-
-  add_ssh_key
-  check_app_exists
-  deploy_app
-  cleanup_docker
-
-}
-
-# Special deployment to production
-if [[ "${BRANCH}" == "master" || "${BRANCH}" == "main" ]]; then
-        
-        log_info "Source Branch is -${green} master ${reset}"
-        log_info "Proceeding to Production Deployment..."
-        run prod_app_deploy
-else
-        log_info "Source Branch is -${green} ${BRANCH} ${reset}"
-        log_info "Proceeding to ${BRANCH} Deployment..."
-        run dokku_app_deploy
-fi
-
+run deployment
 
 if [[ "${status}" == "0" ]]; then
   log_success "Deployment run finished"
