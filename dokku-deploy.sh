@@ -142,7 +142,7 @@ PROJ_DIR="${DEPLOYMENT_DIR}/${PROJECT_DIRECTORY_NAME}"
 APPLICATION_REPO="git@bitbucket.org:interswitch"
 REPO_URL="${APPLICATION_REPO}/${PROJECT_DIRECTORY_NAME}"
 APPLICATION_DOMAIN_NAME="${DOMAIN_NAME}"
-DOCKERFILE="${DOCKERFILE}"
+DOCKERFILE_TO_USE="${DOCKERFILE}"
 
 # Function to add SSH key
 function add_ssh_key {
@@ -290,6 +290,25 @@ function setup_deployment_env() {
         git switch $BRANCH || log_error "Failed to switch to deployment branch"
 }
 
+function check_dockerfile_to_use() {
+    # Function to build a Docker image using a specified Dockerfile or the default one.
+    # Arguments:
+    #   $1 - Environment name for the image
+
+    local image_env=$1
+
+    if [[ -n "${DOCKERFILE_TO_USE}" ]]; then
+        # Build docker image with custom Dockerfile
+        docker build -t "${IMAGE_NAME}" -f "${DOCKERFILE_TO_USE}" . || log_error "Failed to build ${APPLICATION_NAME} image"
+    else
+        # Build docker image with default Dockerfile
+        docker build -t "${IMAGE_NAME}" . || log_error "Failed to build ${APPLICATION_NAME} image"
+    fi
+    
+    log_success "${image_env} image [${green}${IMAGE_NAME}${reset}] built successfully!"
+}
+
+
 # Function to deploy the app to production environment
 function deploy_app_master() {
         # Decalre variables
@@ -302,9 +321,11 @@ function deploy_app_master() {
         build_master_image() {
                 log_info "Building Production Image..."
                 echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin >> /dev/null 2>&1
-                docker build -t ${IMAGE_NAME} -f ${DOCKERFILE} . || log_error "Failed to build $APPLICATION_NAME image"
+                
+                # Check dockerfile to use
+                check_dockerfile_to_use "Production"
                 docker push ${IMAGE_NAME} || log_error "Failed to push $APPLICATION_NAME image"
-                log_success "Production image [${green}${IMAGE_NAME}${reset}] built successfully!"
+                log_success "Production image [${green}${IMAGE_NAME}${reset}] pushed successfully!"
                 echo
                 echo ${IMAGE_NAME} > image_tag.txt
                 echo ${BUILD_TAG} > build_tag.txt
@@ -323,8 +344,8 @@ function deploy_app {
         # Setup Deployment Environment
         setup_deployment_env
 
-        # Build Docker image
-        docker build -t "$IMAGE_NAME" -f ${DOCKERFILE} . || log_error "Failed to build $APPLICATION_NAME image"
+        # Check dockerfile to use
+        check_dockerfile_to_use "${BRANCH}"
 
         # Deploy using the latest image
         dokku git:from-image "$APPLICATION_NAME" "$IMAGE_NAME" || log_error "Failed to deploy $APPLICATION_NAME"
