@@ -299,9 +299,11 @@ function check_dockerfile_to_use() {
 
     if [[ -n "${DOCKERFILE_TO_USE}" ]]; then
         # Build docker image with custom Dockerfile
+        log_info "Building with custom Dockerfile [${yellow}${DOCKERFILE_TO_USE}${reset}] provided..."
         docker build -t "${IMAGE_NAME}" -f "${DOCKERFILE_TO_USE}" . || log_error "Failed to build ${APPLICATION_NAME} image"
     else
         # Build docker image with default Dockerfile
+        log_info "Building with default Dockerfile..."
         docker build -t "${IMAGE_NAME}" . || log_error "Failed to build ${APPLICATION_NAME} image"
     fi
     
