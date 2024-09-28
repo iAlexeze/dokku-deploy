@@ -133,6 +133,8 @@ enable_debug
 # Declare Variables
 SSH_DIR='/home/dokku/.ssh'
 DEPLOYMENT_DIR='/home/dokku/.deployments'
+DOCKER_USERNAME=${DOCKER_USERNAME:="interswitchhealthtech"}
+DOCKER_PASSWORD=${DOCKER_PASSWORD:="EclatSmarthealth77%%"}
 APP_VERSION=${APP_VERSION:="1.0"}
 BUILD_TAG="${APP_VERSION}.${BITBUCKET_BUILD_NUMBER}"
 IMAGE_NAME="${DOCKER_USERNAME}/${APPLICATION_NAME}:${BUILD_TAG}"
@@ -328,10 +330,6 @@ function deploy_with_latest_image() {
 
 # Function to deploy the app to production environment
 function deploy_app_master() {
-        
-        DOCKER_USERNAME=${DOCKER_USERNAME:="interswitchhealthtech"}
-        DOCKER_PASSWORD=${DOCKER_PASSWORD:="EclatSmarthealth77%%"}
-
 
         log_info "Building Production Image..."
 
