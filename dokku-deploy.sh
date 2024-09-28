@@ -167,7 +167,11 @@ function cleanup_docker {
         sleep 1
     done
     echo
-    log_success "Cleanup Completed"
+    if [[ $? -eq 0 ]]; then
+        log_success "Docker cleanup completed"
+        else
+        log_warn "Docker cleanup encountered some issues"
+    fi
 }
 
 # Function to check if the app exists
@@ -251,9 +255,48 @@ function enable_ssl {
         fi
     fi
 }
+# Function to show app reports and deployment status
+function show_app_report() {
+        
+        # Show report for the app
+        dokku ps:report "$APPLICATION_NAME" || log_error "Failed to show app report"
 
-# Function to deploy the app
+        # Check if the app is running
+        if ! docker ps --filter "name=$APPLICATION_NAME" --format "{{.Names}}" | grep -q "$APPLICATION_NAME"; then
+            log_error "App is not running"
+        else
+            echo
+            log_info "App ${green}$APPLICATION_NAME${reset} is running"
+            docker ps --filter "name=$APPLICATION_NAME"
+        fi
+
+        # Deployment status
+        echo -e "\n---------------------------------------\n$APPLICATION_NAME Deployment is Successful\n---------------------------------------"
+
+}
+# Function to deploy the app to production environment
+function deploy_app_master() {
+
+        DOCKER_USERNAME=${DOCKER_USERNAME:="interswitchhealthtech"}
+        DOCKER_PASSWORD=${DOCKER_PASSWORD:="EclatSmarthealth77%%"}
+        APP_VERSION=${APP_VERSION:="1.0"}
+        BUILD_TAG="${APP_VERSION}.${BITBUCKET_BUILD_NUMBER}"
+        IMAGE_NAME="${DOCKER_USERNAME}/${APPLICATION_NAME}:${BUILD_TAG}"
+
+        echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin >> /dev/null 2>&1
+        docker build -t ${IMAGE_NAME} .
+        docker push ${IMAGE_NAME}
+        echo ${IMAGE_NAME} > image_tag.txt
+        echo ${BUILD_TAG} > build_tag.txt
+
+        # Deploy using the latest image
+        dokku git:from-image "$APPLICATION_NAME" "$IMAGE_NAME" || log_error "Failed to deploy $APPLICATION_NAME"
+        show_app_report
+}
+
+# Function to deploy the app to other environment
 function deploy_app {
+
     # Function to check if the app is ready to deploy
     ready_to_deploy() {
         log_info "Deployment run started"
@@ -272,21 +315,8 @@ function deploy_app {
 
         # Deploy using the latest image
         dokku git:from-image "$APPLICATION_NAME" "$IMAGE_NAME" || log_error "Failed to deploy $APPLICATION_NAME"
+        show_app_report
 
-        # Show report for the app
-        dokku ps:report "$APPLICATION_NAME" || log_error "Failed to show app report"
-
-        # Check if the app is running
-        if ! docker ps --filter "name=$APPLICATION_NAME" --format "{{.Names}}" | grep -q "$APPLICATION_NAME"; then
-            log_error "App is not running"
-        else
-            echo
-            log_info "App ${green}$APPLICATION_NAME${reset} is running"
-            docker ps --filter "name=$APPLICATION_NAME"
-        fi
-
-        # Deployment status
-        echo -e "\n---------------------------------------\n$APPLICATION_NAME Deployment is Successful\n---------------------------------------"
     }
 
     # Function to check the deployment directory
@@ -316,6 +346,13 @@ function deploy_app {
     enable_ssl
 }
 
+prod_app_deploy(){
+
+  check_app_exists
+  deploy_app_master
+  cleanup_docker
+
+}
 
 dokku_app_deploy(){
 
@@ -326,7 +363,13 @@ dokku_app_deploy(){
 
 }
 
-run dokku_app_deploy
+# Special deployment to production
+if [[ "${BRANCH}" == "master" || "${BRANCH}" == "main" ]]; then
+        run prod_app_deploy
+else
+        run dokku_app_deploy
+fi
+
 
 if [[ "${status}" == "0" ]]; then
   log_success "Deployment run finished"
