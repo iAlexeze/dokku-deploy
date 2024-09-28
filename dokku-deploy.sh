@@ -302,7 +302,9 @@ function deploy_app_master() {
                 log_info "Building Production Image..."
                 echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin >> /dev/null 2>&1
                 docker build -t ${IMAGE_NAME} . || log_error "Failed to build $APPLICATION_NAME image"
-                docker push ${IMAGE_NAME} . || log_error "Failed to push $APPLICATION_NAME image"
+                docker push ${IMAGE_NAME} || log_error "Failed to push $APPLICATION_NAME image"
+                log_success "Production image [${green}${IMAGE_NAME}${reset}] built successfully!"
+                echo
                 echo ${IMAGE_NAME} > image_tag.txt
                 echo ${BUILD_TAG} > build_tag.txt
         }
