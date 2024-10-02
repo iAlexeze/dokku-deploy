@@ -323,6 +323,7 @@ function deploy_with_latest_image() {
         log_info "Preparing image for deployment..."
         log_info "Retagging Image for unique deployment run"
         docker tag ${IMAGE_NAME} ${NEW_IMAGE_NAME} || log_error "Failed to retag ${IMAGE_NAME} to ${NEW_IMAGE_NAME}"
+        log_info "Current Image Tag - ${green}${NEW_IMAGE_NAME}${reset}."
 
         # Deploy using the latest image
         log_info "Deploying using the latest image..."
