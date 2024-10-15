@@ -355,8 +355,8 @@ function deploy_app_master() {
         log_success "Production image [${green}${IMAGE_NAME}${reset}] pushed successfully!"
 
         # Optionally export artifacts
-        echo ${IMAGE_NAME} > image_tag.txt
-        echo ${BUILD_TAG} > build_tag.txt
+       # echo ${IMAGE_NAME} > image_tag.txt
+        #echo ${BUILD_TAG} > build_tag.txt
 }
 
 # Function to deploy the app to other environment
