@@ -384,10 +384,12 @@ function deploy_app {
                     PROJ_DIR="${DEPLOYMENT_DIR}/${ALTERNATE_PROJECT_DIRECTORY_NAME}"
                     REPO_URL="${APPLICATION_REPO}/${BITBUCKET_REPO_SLUG}"
 
-                    log_warn "Project Directory $PROJ_DIR NOT FOUND!"
-                    log_info "Creating Project Directory..."
+                    log_warn "Alternate Project Directory $PROJ_DIR NOT FOUND!"
+                    log_info "Creating Alternate Project Directory - [ $ALTERNATE_PROJECT_DIRECTORY_NAME ] ..."
                     git clone -b $BRANCH $REPO_URL $ALTERNATE_PROJECT_DIRECTORY_NAME || log_error "Failed to clone $ALTERNATE_PROJECT_DIRECTORY_NAME to $PROJ_DIR"
                     log_success "$APPLICATION_NAME Project Directory created"
+                    ready_to_deploy
+                else
                     ready_to_deploy
                 fi               
             elif [[ ! -d $PROJ_DIR || ! -d ${DEPLOYMENT_DIR}/${PROJECT_DIRECTORY_NAME} ]]; then          
