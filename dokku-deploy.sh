@@ -380,10 +380,12 @@ function deploy_app {
         if [[ -d $DEPLOYMENT_DIR ]]; then
             cd $DEPLOYMENT_DIR || log_error "Failed to change directory to $DEPLOYMENT_DIR"
             if [[ -n $ALTERNATE_PROJECT_DIRECTORY_NAME ]]; then
-                if [[ ! -d ${DEPLOYMENT_DIR}/${ALTERNATE_PROJECT_DIRECTORY_NAME} ]]; then
-                    PROJ_DIR="${DEPLOYMENT_DIR}/${ALTERNATE_PROJECT_DIRECTORY_NAME}"
-                    REPO_URL="${APPLICATION_REPO}/${BITBUCKET_REPO_SLUG}"
 
+                # Define project directory based on ALTERNATE_PROJECT_DIRECTORY_NAME value
+                PROJ_DIR="${DEPLOYMENT_DIR}/${ALTERNATE_PROJECT_DIRECTORY_NAME}"
+                REPO_URL="${APPLICATION_REPO}/${BITBUCKET_REPO_SLUG}"
+
+                if [[ ! -d ${DEPLOYMENT_DIR}/${ALTERNATE_PROJECT_DIRECTORY_NAME} ]]; then
                     log_warn "Alternate Project Directory $PROJ_DIR NOT FOUND!"
                     log_info "Creating Alternate Project Directory - [ $ALTERNATE_PROJECT_DIRECTORY_NAME ] ..."
                     git clone -b $BRANCH $REPO_URL $ALTERNATE_PROJECT_DIRECTORY_NAME || log_error "Failed to clone $ALTERNATE_PROJECT_DIRECTORY_NAME to $PROJ_DIR"
