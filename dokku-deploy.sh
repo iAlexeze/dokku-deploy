@@ -386,7 +386,7 @@ function deploy_app {
 
                     log_warn "Project Directory $PROJ_DIR NOT FOUND!"
                     log_info "Creating Project Directory..."
-                    git clone -b $BRANCH $REPO_URL || log_error "Failed to clone $ALTERNATE_PROJECT_DIRECTORY_NAME to $PROJ_DIR"
+                    git clone -b $BRANCH $REPO_URL $ALTERNATE_PROJECT_DIRECTORY_NAME || log_error "Failed to clone $ALTERNATE_PROJECT_DIRECTORY_NAME to $PROJ_DIR"
                     log_success "$APPLICATION_NAME Project Directory created"
                     ready_to_deploy
                 fi               
