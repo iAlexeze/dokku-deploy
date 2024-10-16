@@ -388,8 +388,12 @@ function deploy_app {
                     log_info "Creating Alternate Project Directory - [ $ALTERNATE_PROJECT_DIRECTORY_NAME ] ..."
                     git clone -b $BRANCH $REPO_URL $ALTERNATE_PROJECT_DIRECTORY_NAME || log_error "Failed to clone $ALTERNATE_PROJECT_DIRECTORY_NAME to $PROJ_DIR"
                     log_success "$APPLICATION_NAME Project Directory created"
+                    log_info "Deploying from Alternate Project Directory - [ $ALTERNATE_PROJECT_DIRECTORY_NAME ]"
+                    echo
                     ready_to_deploy
                 else
+                    log_info "Deploying from Alternate Project Directory - [ $ALTERNATE_PROJECT_DIRECTORY_NAME ]"
+                    echo
                     ready_to_deploy
                 fi               
             elif [[ ! -d $PROJ_DIR || ! -d ${DEPLOYMENT_DIR}/${PROJECT_DIRECTORY_NAME} ]]; then          
