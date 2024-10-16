@@ -379,7 +379,18 @@ function deploy_app {
     check_deployment_dir() { 
         if [[ -d $DEPLOYMENT_DIR ]]; then
             cd $DEPLOYMENT_DIR || log_error "Failed to change directory to $DEPLOYMENT_DIR"
-            if [[ ! -d $PROJ_DIR || ! -d $DEPLOYMENT_DIR/$PROJECT_DIRECTORY_NAME ]]; then          
+            if [[ -n $ALTERNATE_PROJECT_DIRECTORY_NAME ]]; then
+                if [[ ! -d ${DEPLOYMENT_DIR}/${ALTERNATE_PROJECT_DIRECTORY_NAME} ]]; then
+                    PROJ_DIR="${DEPLOYMENT_DIR}/${ALTERNATE_PROJECT_DIRECTORY_NAME}"
+                    REPO_URL="${APPLICATION_REPO}/${BITBUCKET_REPO_SLUG}"
+
+                    log_warn "Project Directory $PROJ_DIR NOT FOUND!"
+                    log_info "Creating Project Directory..."
+                    git clone -b $BRANCH $REPO_URL || log_error "Failed to clone $ALTERNATE_PROJECT_DIRECTORY_NAME to $PROJ_DIR"
+                    log_success "$APPLICATION_NAME Project Directory created"
+                    ready_to_deploy
+                fi               
+            elif [[ ! -d $PROJ_DIR || ! -d ${DEPLOYMENT_DIR}/${PROJECT_DIRECTORY_NAME} ]]; then          
                 log_warn "Project Directory $PROJ_DIR NOT FOUND!"
                 log_info "Creating Project Directory..."
                 git clone -b $BRANCH $REPO_URL || log_error "Failed to clone $PROJECT_DIRECTORY_NAME to $PROJ_DIR"
@@ -401,6 +412,7 @@ function deploy_app {
     check_deployment_dir
     enable_ssl
 }
+
 
 function deployment() {
         # Initial setup
