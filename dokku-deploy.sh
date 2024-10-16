@@ -426,9 +426,9 @@ function deployment() {
         add_ssh_key
 
         # Deployment logic
-        if [[ "${BRANCH}" == "master" || "${BRANCH}" == "main" ]]; then
+        if [[ "${BRANCH}" == "master" || "${BRANCH}" == "main" || "${BRANCH}" == "lifesaver" ]]; then
                 
-                log_info "Source Branch is -${green} master ${reset}"
+                log_info "Source Branch is -${green} ${BRANCH} ${reset}"
                 log_info "Proceeding to Production Deployment..."
                 deploy_app_master
         else
