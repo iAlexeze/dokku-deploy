@@ -365,7 +365,7 @@ function deploy_app_lifesaver() {
 
         app_name="lifesaver"
         build_tag="${APP_VERSION}.${BITBUCKET_BUILD_NUMBER}"
-        image_name="${DOCKER_USERNAME}/production:${app_name}-${build_tag}"
+        lifesaver_image_name="${DOCKER_USERNAME}/production:${app_name}-${build_tag}"
 
         log_info "Building $app_name Production Image..."
 
@@ -381,13 +381,17 @@ function deploy_app_lifesaver() {
         # Deploy with latest image
         deploy_with_latest_image
 
+        # Retag image to enable push to remote image repository
+        docker tag  ${IMAGE_NAME} $lifesaver_image_name
+        log_info "Current image name -${green}[ $lifesaver_image_name ] ${reset}"
+
         # Push image to repository if successful
         log_info "Pushing $app_name Production Image to repository..."
-        docker push ${image_name} || log_error "Failed to push $APPLICATION_NAME image"
-        log_success "Production image [${green}${image_name}${reset}] pushed successfully!"
+        docker push ${lifesaver_image_name} || log_error "Failed to push $APPLICATION_NAME image"
+        log_success "Production image [${green}${lifesaver_image_name}${reset}] pushed successfully!"
 
         # Optionally export artifacts
-       # echo ${image_name} > image_tag.txt
+       # echo ${lifesaver_image_name} > image_tag.txt
         #echo ${build_tag} > build_tag.txt
 }
 
