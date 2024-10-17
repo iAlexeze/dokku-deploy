@@ -383,7 +383,7 @@ function deploy_app_lifesaver() {
 
         # Retag image to enable push to remote image repository
         docker tag  ${IMAGE_NAME} $lifesaver_image_name
-        log_info "Current image name -${green}[ $lifesaver_image_name ] ${reset}"
+        log_info "Production image - ${green}[ $lifesaver_image_name ] ${reset}"
 
         # Push image to repository if successful
         log_info "Pushing $app_name Production Image to repository..."
