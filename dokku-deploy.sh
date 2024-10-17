@@ -359,6 +359,38 @@ function deploy_app_master() {
         #echo ${BUILD_TAG} > build_tag.txt
 }
 
+
+# Function to deploy the app to lifesaver environment
+function deploy_app_lifesaver() {
+
+        app_name="lifesaver"
+        build_tag="${APP_VERSION}.${BITBUCKET_BUILD_NUMBER}"
+        image_name="${DOCKER_USERNAME}/production:${app_name}-${build_tag}"
+
+        log_info "Building $app_name Production Image..."
+
+        # Login to Image Repository
+        echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin >> /dev/null 2>&1
+        
+        # Setup deployment environment
+        setup_deployment_env
+
+        # Check dockerfile to use
+        check_dockerfile_to_use "Production"
+        
+        # Deploy with latest image
+        deploy_with_latest_image
+
+        # Push image to repository if successful
+        log_info "Pushing $app_name Production Image to repository..."
+        docker push ${image_name} || log_error "Failed to push $APPLICATION_NAME image"
+        log_success "Production image [${green}${image_name}${reset}] pushed successfully!"
+
+        # Optionally export artifacts
+       # echo ${image_name} > image_tag.txt
+        #echo ${build_tag} > build_tag.txt
+}
+
 # Function to deploy the app to other environment
 function deploy_app {
 
@@ -428,11 +460,17 @@ function deployment() {
         add_ssh_key
 
         # Deployment logic
-        if [[ "${BRANCH}" == "master" || "${BRANCH}" == "main" || "${BRANCH}" == "lifesaver" ]]; then
+        if [[ "${BRANCH}" == "master" || "${BRANCH}" == "main" ]]; then
                 
                 log_info "Source Branch is -${green} ${BRANCH} ${reset}"
                 log_info "Proceeding to Production Deployment..."
                 deploy_app_master
+
+        elif [[ "${BRANCH}" == "lifesaver" ]]; then
+                
+                log_info "Source Branch is -${green} ${BRANCH} ${reset}"
+                log_info "Proceeding to -${green} ${BRANCH} ${reset}Deployment..."
+                deploy_app_lifesaver
         else
                 log_info "Source Branch is -${green} ${BRANCH} ${reset}"
                 log_info "Proceeding to ${BRANCH} Deployment..."
