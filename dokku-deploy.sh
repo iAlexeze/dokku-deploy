@@ -365,7 +365,7 @@ function deploy_app_lifesaver() {
 
         app_name="lifesaver"
         build_tag="${APP_VERSION}.${BITBUCKET_BUILD_NUMBER}"
-        lifesaver_image_name="${DOCKER_USERNAME}/production:${app_name}-${build_tag}"
+        lifesaver_image_name="${DOCKER_USERNAME}/production:${app_name}-${BITBUCKET_REPO_SLUG}-${build_tag}"
 
         log_info "Building $app_name Production Image..."
 
