@@ -363,7 +363,7 @@ function deploy_app_master() {
 # Function to deploy the app to lifesaver environment
 function deploy_app_lifesaver() {
 
-        app_name="lifesaver"
+        app_name=${APPLICATION_NAME}
         build_tag="${APP_VERSION}.${BITBUCKET_BUILD_NUMBER}"
         lifesaver_image_name="${DOCKER_USERNAME}/production:${app_name}-${BITBUCKET_REPO_SLUG}-${build_tag}"
 
