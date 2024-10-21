@@ -337,6 +337,8 @@ function deploy_app_master() {
 
         log_info "Building Production Image..."
 
+        # Function to check if the app is ready to deploy
+    ready_to_deploy() {
         # Login to Image Repository
         echo "${DOCKER_PASSWORD}" | docker login -u "${DOCKER_USERNAME}" --password-stdin >> /dev/null 2>&1
         
@@ -357,11 +359,61 @@ function deploy_app_master() {
         # Optionally export artifacts
        # echo ${IMAGE_NAME} > image_tag.txt
         #echo ${BUILD_TAG} > build_tag.txt
+    }
+    
+        # Function to check the deployment directory
+    check_deployment_dir() { 
+        if [[ -d $DEPLOYMENT_DIR ]]; then
+            cd $DEPLOYMENT_DIR || log_error "Failed to change directory to $DEPLOYMENT_DIR"
+            if [[ -n $ALTERNATE_PROJECT_DIRECTORY_NAME ]]; then
+
+                # Define project directory based on ALTERNATE_PROJECT_DIRECTORY_NAME value
+                PROJ_DIR="${DEPLOYMENT_DIR}/${ALTERNATE_PROJECT_DIRECTORY_NAME}"
+                REPO_URL="${APPLICATION_REPO}/${BITBUCKET_REPO_SLUG}"
+
+                if [[ ! -d ${DEPLOYMENT_DIR}/${ALTERNATE_PROJECT_DIRECTORY_NAME} ]]; then
+                    log_warn "Alternate Project Directory $PROJ_DIR NOT FOUND!"
+                    log_info "Creating Alternate Project Directory - [ $ALTERNATE_PROJECT_DIRECTORY_NAME ] ..."
+                    git clone -b $BRANCH $REPO_URL $ALTERNATE_PROJECT_DIRECTORY_NAME || log_error "Failed to clone $ALTERNATE_PROJECT_DIRECTORY_NAME to $PROJ_DIR"
+                    log_success "$APPLICATION_NAME Project Directory created"
+                    log_info "Deploying from Alternate Project Directory - [ $ALTERNATE_PROJECT_DIRECTORY_NAME ]"
+                    echo
+                    ready_to_deploy
+                else
+                    log_info "Deploying from Alternate Project Directory - [ $ALTERNATE_PROJECT_DIRECTORY_NAME ]"
+                    echo
+                    ready_to_deploy
+                fi               
+            elif [[ ! -d $PROJ_DIR || ! -d ${DEPLOYMENT_DIR}/${PROJECT_DIRECTORY_NAME} ]]; then          
+                log_warn "Project Directory $PROJ_DIR NOT FOUND!"
+                log_info "Creating Project Directory..."
+                git clone -b $BRANCH $REPO_URL || log_error "Failed to clone $PROJECT_DIRECTORY_NAME to $PROJ_DIR"
+                log_success "$APPLICATION_NAME Project Directory created"
+                ready_to_deploy                
+            else
+                # If project deployment directory exists, proceed to deploy
+                ready_to_deploy
+            fi
+        else
+            # Create deployment directory if it doesn't exist
+            mkdir -p $DEPLOYMENT_DIR || log_error "Failed to make directory - $DEPLOYMENT_DIR"
+            log_success "$DEPLOYMENT_DIR Deployment directory created"
+            check_deployment_dir  # Recursive call to recheck the created directory
+        fi
+    }
+
+    # Start deployment check
+    check_deployment_dir
+    enable_ssl
+
 }
 
 
 # Function to deploy the app to lifesaver environment
 function deploy_app_lifesaver() {
+
+    # Function to check if the app is ready to deploy
+    ready_to_deploy() {
 
         app_name=${APPLICATION_NAME}
         build_tag="${APP_VERSION}.${BITBUCKET_BUILD_NUMBER}"
@@ -393,6 +445,55 @@ function deploy_app_lifesaver() {
         # Optionally export artifacts
        # echo ${lifesaver_image_name} > image_tag.txt
         #echo ${build_tag} > build_tag.txt
+
+    }
+
+        # Function to check the deployment directory
+    check_deployment_dir() { 
+        if [[ -d $DEPLOYMENT_DIR ]]; then
+            cd $DEPLOYMENT_DIR || log_error "Failed to change directory to $DEPLOYMENT_DIR"
+            if [[ -n $ALTERNATE_PROJECT_DIRECTORY_NAME ]]; then
+
+                # Define project directory based on ALTERNATE_PROJECT_DIRECTORY_NAME value
+                PROJ_DIR="${DEPLOYMENT_DIR}/${ALTERNATE_PROJECT_DIRECTORY_NAME}"
+                REPO_URL="${APPLICATION_REPO}/${BITBUCKET_REPO_SLUG}"
+
+                if [[ ! -d ${DEPLOYMENT_DIR}/${ALTERNATE_PROJECT_DIRECTORY_NAME} ]]; then
+                    log_warn "Alternate Project Directory $PROJ_DIR NOT FOUND!"
+                    log_info "Creating Alternate Project Directory - [ $ALTERNATE_PROJECT_DIRECTORY_NAME ] ..."
+                    git clone -b $BRANCH $REPO_URL $ALTERNATE_PROJECT_DIRECTORY_NAME || log_error "Failed to clone $ALTERNATE_PROJECT_DIRECTORY_NAME to $PROJ_DIR"
+                    log_success "$APPLICATION_NAME Project Directory created"
+                    log_info "Deploying from Alternate Project Directory - [ $ALTERNATE_PROJECT_DIRECTORY_NAME ]"
+                    echo
+                    ready_to_deploy
+                else
+                    log_info "Deploying from Alternate Project Directory - [ $ALTERNATE_PROJECT_DIRECTORY_NAME ]"
+                    echo
+                    ready_to_deploy
+                fi               
+            elif [[ ! -d $PROJ_DIR || ! -d ${DEPLOYMENT_DIR}/${PROJECT_DIRECTORY_NAME} ]]; then          
+                log_warn "Project Directory $PROJ_DIR NOT FOUND!"
+                log_info "Creating Project Directory..."
+                git clone -b $BRANCH $REPO_URL || log_error "Failed to clone $PROJECT_DIRECTORY_NAME to $PROJ_DIR"
+                log_success "$APPLICATION_NAME Project Directory created"
+                ready_to_deploy                
+            else
+                # If project deployment directory exists, proceed to deploy
+                ready_to_deploy
+            fi
+        else
+            # Create deployment directory if it doesn't exist
+            mkdir -p $DEPLOYMENT_DIR || log_error "Failed to make directory - $DEPLOYMENT_DIR"
+            log_success "$DEPLOYMENT_DIR Deployment directory created"
+            check_deployment_dir  # Recursive call to recheck the created directory
+        fi
+    }
+
+    # Start deployment check
+    check_deployment_dir
+    enable_ssl
+
+
 }
 
 # Function to deploy the app to other environment
