@@ -575,7 +575,7 @@ function deployment() {
         # Initial setup
         check_app_exists
         add_ssh_key
-        add_to_known_hosts_if_missing bitbucket.org
+        # add_to_known_hosts_if_missing bitbucket.org
 
         # Deployment logic
         if [[ "${BRANCH}" == "master" || "${BRANCH}" == "main" ]]; then
