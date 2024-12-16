@@ -163,6 +163,18 @@ function add_ssh_key {
     ssh-add "$SSH_ACCESS_KEY" > /dev/null 2>&1 || log_error "Failed to add SSH key.  \nEnter a BITBUCKET_CLONE_KEY_NAME already added to your bitbucket profile and also located at ~/.ssh in the server"
 }
 
+# Function to populate knownhost if missing
+function add_to_known_hosts_if_missing {
+  local host=$1
+  if ssh-keygen -F "$host" > /dev/null; then
+    log_info "Host '$host' already exists in known_hosts."
+  else
+    log_info "Adding '$host' to known_hosts..."
+    ssh-keyscan -t ed25519 "$host" >> ~/.ssh/known_hosts
+    log_success "Host '$host' added to known_hosts."
+  fi
+}
+
 # Function to clean up unused images and resources
 function cleanup_docker {
     log_info "Cleaning up unused images and resources..."
@@ -563,6 +575,7 @@ function deployment() {
         # Initial setup
         check_app_exists
         add_ssh_key
+        add_to_known_hosts_if_missing bitbucket.org
 
         # Deployment logic
         if [[ "${BRANCH}" == "master" || "${BRANCH}" == "main" ]]; then
