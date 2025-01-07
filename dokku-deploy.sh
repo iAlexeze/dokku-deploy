@@ -1,4 +1,3 @@
-
 #!/usr/bin/env bash
 #
 # Run a command or script on your server
@@ -327,10 +326,23 @@ function check_dockerfile_to_use() {
     log_success "${image_env} image [${green}${IMAGE_NAME}${reset}] built successfully!"
 }
 
+
 # Function to deploy app with latest image
 function deploy_with_latest_image() {
         DATE=$(date +%Y.%m.%d-%H:%M)
         NEW_IMAGE_NAME="$APPLICATION_NAME-v1.$DATE"
+
+        ##################################################################################
+                    # Temporary fix for eclinic frontend ---- to be removed
+        if [[ "${BITBUCKET_REPO_SLUG}" == "eClinic-v3-frontend" || "${BITBUCKET_REPO_SLUG}" == "eclinic-v3-frontend" ]]; then
+            if [[ "${ENVIRONMENT}" == "uat" ]]; then
+                IMAGE_NAME="${IMAGE_NAME}-${ENVIRONMENT}"
+            elif [[ "${ENVIRONMENT}" == "development" ]]; then
+                IMAGE_NAME="${IMAGE_NAME}-${ENVIRONMENT}"
+            fi
+        fi
+        ##################################################################################
+
 
         log_info "Preparing image for deployment..."
         log_info "Retagging Image for unique deployment run"
